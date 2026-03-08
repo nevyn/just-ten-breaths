@@ -23,7 +23,7 @@ for arg in "$@"; do
     esac
 done
 
-PBXPROJ="BreatheBar.xcodeproj/project.pbxproj"
+PBXPROJ="just ten breaths.xcodeproj/project.pbxproj"
 
 # Helper: in dry-run mode, print the command instead of running it.
 maybe() {
