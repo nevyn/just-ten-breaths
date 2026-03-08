@@ -51,8 +51,8 @@ jobs:
       - name: Build
         run: |
           xcodebuild build \
-            -project BreatheBar.xcodeproj \
-            -scheme BreatheBar \
+            -project "just ten breaths.xcodeproj" \
+            -scheme "just ten breaths" \
             -configuration Release \
             -derivedDataPath build \
             MARKETING_VERSION="$VERSION" \
@@ -65,17 +65,17 @@ jobs:
       - name: Verify code signature
         run: |
           echo "--- Signature info ---"
-          codesign -dvv build/Build/Products/Release/BreatheBar.app
+          codesign -dvv "build/Build/Products/Release/just ten breaths.app"
           echo ""
           echo "--- Signature verification ---"
           codesign --verify --deep --strict --verbose=2 \
-            build/Build/Products/Release/BreatheBar.app
+            "build/Build/Products/Release/just ten breaths.app"
 
       - name: Create zip
         run: |
           ditto -c -k --keepParent \
-            build/Build/Products/Release/BreatheBar.app \
-            "BreatheBar_${VERSION}.zip"
+            "build/Build/Products/Release/just ten breaths.app" \
+            "just-ten-breaths_${VERSION}.zip"
 
       - name: Notarize
         env:
@@ -83,7 +83,7 @@ jobs:
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: M4Q2TE45WT
         run: |
-          SUBMIT_OUTPUT=$(xcrun notarytool submit "BreatheBar_${VERSION}.zip" \
+          SUBMIT_OUTPUT=$(xcrun notarytool submit "just-ten-breaths_${VERSION}.zip" \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_ID_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
@@ -108,18 +108,18 @@ jobs:
           fi
 
           xcrun stapler staple \
-            build/Build/Products/Release/BreatheBar.app
+            "build/Build/Products/Release/just ten breaths.app"
 
           ditto -c -k --keepParent \
-            build/Build/Products/Release/BreatheBar.app \
-            "BreatheBar_${VERSION}.zip"
+            "build/Build/Products/Release/just ten breaths.app" \
+            "just-ten-breaths_${VERSION}.zip"
 
       - name: Upload to Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "${{ github.event.release.tag_name }}" \
-            "BreatheBar_${VERSION}.zip" \
+            "just-ten-breaths_${VERSION}.zip" \
             --clobber
 
       - name: Clean up
