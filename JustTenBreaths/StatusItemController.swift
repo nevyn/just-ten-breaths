@@ -319,9 +319,9 @@ final class StatusItemController {
     
     @objc private func showAbout() {
         NSApp.activate(ignoringOtherApps: true)
-        let url = URL(string: "https://nevyn.dev/justtenbreaths")!
+        let url = URL(string: "https://nevyn.github.io/just-ten-breaths/")!
         let credits = NSMutableAttributedString(string: "Read more: ")
-        credits.append(NSAttributedString(string: "nevyn.dev/justtenbreaths", attributes: [
+        credits.append(NSAttributedString(string: "nevyn.github.io/just-ten-breaths", attributes: [
             .link: url,
             .foregroundColor: NSColor.linkColor,
         ]))
