@@ -1,8 +1,8 @@
-# BreatheBar — Agent Guide
+# just ten breaths — Agent Guide
 
 > **Keep this file accurate.** If you change something this doc describes, update the relevant section.
 
-BreatheBar is a macOS menu bar app for hourly breathing reminders. Core philosophy: **non-intrusive**. No notifications, no alerts, no Dock icon — just a subtle icon pulse the user can ignore until they're ready.
+just ten breaths is a macOS menu bar app for hourly breathing reminders. Core philosophy: **non-intrusive**. No notifications, no alerts, no Dock icon — just a subtle icon pulse the user can ignore until they're ready.
 
 ---
 

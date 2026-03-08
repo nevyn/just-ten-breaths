@@ -2,7 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CFBundleDisplayName</key>
+    <string>just ten breaths</string>
     <key>NSHealthUpdateUsageDescription</key>
-    <string>BreatheBar logs your breathing sessions as mindfulness minutes in Apple Health.</string>
+    <string>just ten breaths logs your breathing sessions as mindfulness minutes in Apple Health.</string>
 </dict>
 </plist>

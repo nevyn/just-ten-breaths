@@ -80,7 +80,7 @@ struct OnboardingView: View {
                 .resizable()
                 .frame(width: 96, height: 96)
 
-            Text("Welcome to BreatheBar")
+            Text("Welcome to just ten breaths")
                 .font(.largeTitle.bold())
             
             Group {

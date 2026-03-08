@@ -73,7 +73,7 @@ final class StatusItemController {
         menu.addItem(settingsItem)
         
         // About
-        let aboutItem = NSMenuItem(title: "About BreatheBar", action: #selector(showAbout), keyEquivalent: "")
+        let aboutItem = NSMenuItem(title: "About just ten breaths", action: #selector(showAbout), keyEquivalent: "")
         aboutItem.target = self
         aboutItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: "About")
         menu.addItem(aboutItem)
@@ -96,7 +96,7 @@ final class StatusItemController {
         menu.addItem(NSMenuItem.separator())
 
         // Quit
-        let quitItem = NSMenuItem(title: "Quit BreatheBar", action: #selector(quitApp), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "Quit just ten breaths", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
         quitItem.image = NSImage(systemSymbolName: "xmark.circle", accessibilityDescription: "Quit")
         menu.addItem(quitItem)
@@ -216,7 +216,7 @@ final class StatusItemController {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         
         let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
-        guard let symbolImage = NSImage(systemSymbolName: "leaf.fill", accessibilityDescription: "BreatheBar")?
+        guard let symbolImage = NSImage(systemSymbolName: "leaf.fill", accessibilityDescription: "just ten breaths")?
             .withSymbolConfiguration(config) else { return }
         
         let symbolSize = symbolImage.size
@@ -319,9 +319,9 @@ final class StatusItemController {
     
     @objc private func showAbout() {
         NSApp.activate(ignoringOtherApps: true)
-        let url = URL(string: "https://nevyn.dev/breathebar")!
+        let url = URL(string: "https://nevyn.dev/justtenbreaths")!
         let credits = NSMutableAttributedString(string: "Read more: ")
-        credits.append(NSAttributedString(string: "nevyn.dev/breathebar", attributes: [
+        credits.append(NSAttributedString(string: "nevyn.dev/justtenbreaths", attributes: [
             .link: url,
             .foregroundColor: NSColor.linkColor,
         ]))

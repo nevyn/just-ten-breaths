@@ -121,7 +121,7 @@ if command -v claude &>/dev/null && [[ -n "$LAST_TAG" ]]; then
     SWIFT_DIFF="$(git diff "${LAST_TAG}..HEAD" -- '*.swift' 2>/dev/null || true)"
 
     NOTES="$(cat <<EOF | claude -p --output-format text 2>/dev/null || true
-You are writing release notes for BreatheBar, a minimal macOS menu bar breathing reminder app.
+You are writing release notes for just ten breaths, a minimal macOS menu bar breathing reminder app.
 Below are the git commits and Swift code changes since the last release (v${CURRENT_VERSION}).
 Write a short, friendly release notes body (2–5 bullet points) describing user-facing changes.
 Omit version-bump commits and internal/CI plumbing. Use plain markdown bullet points, no header.

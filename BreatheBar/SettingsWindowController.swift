@@ -20,7 +20,7 @@ final class SettingsWindowController {
         let hostingController = NSHostingController(rootView: SettingsView(appState: appState))
 
         let window = NSWindow(contentViewController: hostingController)
-        window.title = "BreatheBar Settings"
+        window.title = "just ten breaths settings"
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.setContentSize(hostingController.view.fittingSize)

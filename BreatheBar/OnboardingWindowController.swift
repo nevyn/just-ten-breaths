@@ -29,7 +29,7 @@ final class OnboardingWindowController: NSObject, NSWindowDelegate {
         let hostingController = NSHostingController(rootView: view)
 
         let window = NSWindow(contentViewController: hostingController)
-        window.title = "Welcome to BreatheBar"
+        window.title = "Welcome to just ten breaths"
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.setContentSize(hostingController.view.fittingSize)
