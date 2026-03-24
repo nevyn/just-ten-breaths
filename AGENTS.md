@@ -7,7 +7,8 @@
 - Write unit tests when it makes sense. Especially when you fix a bug, see if you can write a unit test to make sure it doesn't happen again.
 - Make #Previews for all the important views.
 - Always build with xcodebuild to make sure things compile. Always verify that the app builds, and at the end of each plan, also run all unit tests with xcodebuild.
-- Keep a MEMORY.md as a memory for you between sessions. Keep it under 100 lines. Focus on things you can't easily rediscover from code: architecture overview, build commands, non-obvious pitfalls/gotchas (where you'd waste time if you forgot), test infrastructure quirks, and user preferences. Don't document settled features in detail — you can read the code for those. Update with each commit.
+- Keep a MEMORY.md in the repo root as project-specific memory between sessions. Keep it under 100 lines. Focus on things you can't easily rediscover from code: architecture overview, build commands, non-obvious pitfalls/gotchas, test quirks. Don't document settled features — read the code. Update with each commit.
+- For general user preferences and cross-project learnings (tool usage patterns, workflow preferences, etc.), use auto memory (~/.claude/automemory/) instead of the repo MEMORY.md.
 - At the start of every new task, re-read AGENTS.md and MEMORY.md.
 
 More details follow, but keep the above always in memory with highest priority.
