@@ -28,17 +28,28 @@ final class HealthKitManager {
         return store.authorizationStatus(for: mindfulType)
     }
 
-    /// Presents the system authorization sheet and returns whether write access was granted.
-    func requestAuthorization() async -> Bool {
-        guard isAvailable,
-              let mindfulType = HKObjectType.categoryType(forIdentifier: .mindfulSession)
-        else { return false }
-        do {
-            try await store.requestAuthorization(toShare: [mindfulType], read: [])
-            return authorizationStatus() == .sharingAuthorized
-        } catch {
-            print("HealthKit authorization error: \(error)")
-            return false
+    /// Presents the system authorization sheet. Throws on failure.
+    func requestAuthorization() async throws {
+        guard isAvailable else {
+            throw HealthKitError.unavailable
+        }
+        guard let mindfulType = HKObjectType.categoryType(forIdentifier: .mindfulSession) else {
+            throw HealthKitError.mindfulSessionTypeUnavailable
+        }
+        try await store.requestAuthorization(toShare: [mindfulType], read: [])
+    }
+
+    enum HealthKitError: LocalizedError {
+        case unavailable
+        case mindfulSessionTypeUnavailable
+
+        var errorDescription: String? {
+            switch self {
+            case .unavailable:
+                "HealthKit is not available on this device."
+            case .mindfulSessionTypeUnavailable:
+                "Mindful session type is not available."
+            }
         }
     }
 

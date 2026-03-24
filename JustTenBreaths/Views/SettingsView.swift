@@ -56,6 +56,11 @@ struct SettingsView: View {
             
             Section("Startup") {
                 Toggle("Launch at Login", isOn: $appState.settings.launchAtLogin)
+                if let error = appState.loginItemError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
 
             Section("Health") {
@@ -65,6 +70,11 @@ struct SettingsView: View {
                             Task { await appState.requestHealthKitAuthorizationIfNeeded() }
                         }
                     }
+                if let error = appState.healthKitError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
                 Text("Sessions over 60 seconds are logged as Mindfulness to Apple Health.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

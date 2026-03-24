@@ -23,7 +23,12 @@ final class AppState {
             updateLaunchAtLogin()
         }
     }
-    
+
+    /// Error message from the last failed login item registration/unregistration, or nil if successful.
+    var loginItemError: String?
+    /// Error message from the last failed HealthKit operation, or nil if successful.
+    var healthKitError: String?
+
     let healthKitManager = HealthKitManager()
 
     private var timer: Timer?
@@ -54,14 +59,17 @@ final class AppState {
     }
 
     /// Requests HealthKit write authorization when logToHealth is enabled.
-    /// Silently disables the setting if HealthKit is unavailable on this device.
+    /// Sets `healthKitError` on failure and disables the setting if HealthKit is unavailable.
     func requestHealthKitAuthorizationIfNeeded() async {
         guard settings.logToHealth else { return }
-        guard healthKitManager.isAvailable else {
+        do {
+            try await healthKitManager.requestAuthorization()
+            healthKitError = nil
+        } catch {
+            healthKitError = "Failed to set up HealthKit: \(error.localizedDescription)"
             settings.logToHealth = false
-            return
+            print("HealthKit authorization error: \(error)")
         }
-        _ = await healthKitManager.requestAuthorization()
     }
     
     func togglePrimed() {
@@ -130,8 +138,9 @@ final class AppState {
             } else {
                 try SMAppService.mainApp.unregister()
             }
+            loginItemError = nil
         } catch {
-            // Silently fail - user can retry in settings
+            loginItemError = "Failed to \(settings.launchAtLogin ? "register" : "unregister") login item: \(error.localizedDescription)"
             print("Failed to update launch at login: \(error)")
         }
     }

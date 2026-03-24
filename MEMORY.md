@@ -26,7 +26,7 @@ Three booleans interact in a non-obvious way across `AppState` and `BreathingSet
 
 ## Things that look wrong but aren't
 
-- **Dark appearance forced on the breathing panel** — intentional, so the ultra-thin material and petal colors look right on both light and dark system themes.
+- **Breathing panel appearance** — defaults to dark (`.darkAqua`) but user-configurable via `settings.appearanceStyle` (dark/light/system/inverse system).
 - **Animation values in `StatusItemController`** (damping, burst timing, hue step of 137°) — hand-tuned over iterations. Don't "fix" them without visual testing.
 - **The :55–:59 window is fixed** — not a bug, not a missing settings option. It's a deliberate design constraint.
 - **`LSUIElement = YES`** — the app has no Dock icon by design. Don't add a `WindowGroup` scene.
