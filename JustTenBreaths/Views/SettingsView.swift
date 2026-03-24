@@ -63,21 +63,23 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Health") {
-                Toggle("Log to Apple Health", isOn: $appState.settings.logToHealth)
-                    .onChange(of: appState.settings.logToHealth) { _, newValue in
-                        if newValue {
-                            Task { await appState.requestHealthKitAuthorizationIfNeeded() }
+            if appState.healthKitManager.isAvailable {
+                Section("Health") {
+                    Toggle("Log to Apple Health", isOn: $appState.settings.logToHealth)
+                        .onChange(of: appState.settings.logToHealth) { _, newValue in
+                            if newValue {
+                                Task { await appState.requestHealthKitAuthorizationIfNeeded() }
+                            }
                         }
+                    if let error = appState.healthKitError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
                     }
-                if let error = appState.healthKitError {
-                    Text(error)
+                    Text("Sessions over 60 seconds are logged as Mindfulness to Apple Health.")
                         .font(.caption)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(.secondary)
                 }
-                Text("Sessions over 60 seconds are logged as Mindfulness to Apple Health.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
