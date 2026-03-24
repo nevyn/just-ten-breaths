@@ -58,7 +58,9 @@ jobs:
           TEMP_PROFILE="$RUNNER_TEMP/temp.provisionprofile"
           echo -n "$PROVISIONING_PROFILE" | base64 --decode -o "$TEMP_PROFILE"
 
-          PROFILE_UUID=$(security cms -D -i "$TEMP_PROFILE" | /usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin)
+          DECODED_PLIST="$RUNNER_TEMP/profile.plist"
+          security cms -D -i "$TEMP_PROFILE" -o "$DECODED_PLIST"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" "$DECODED_PLIST")
           cp "$TEMP_PROFILE" "$PROFILE_DIR/${PROFILE_UUID}.provisionprofile"
           echo "Installed profile: $PROFILE_UUID"
 
