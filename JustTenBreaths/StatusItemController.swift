@@ -292,8 +292,12 @@ final class StatusItemController {
             below: statusItem?.button,
             cadence: appState.settings.breathingCadence,
             appearanceStyle: appState.settings.appearanceStyle,
+            isFullscreen: appState.settings.prefersFullscreenBreathing,
             onCadenceChanged: { [weak self] newCadence in
                 self?.appState.settings.breathingCadence = newCadence
+            },
+            onFullscreenChanged: { [weak self] fullscreen in
+                self?.appState.settings.prefersFullscreenBreathing = fullscreen
             }
         )
     }

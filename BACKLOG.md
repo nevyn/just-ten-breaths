@@ -5,6 +5,7 @@
 
 # Completed
 
+- [x] Persist fullscreen preference across sessions
 - [x] Fullscreen mode for breathing window (button + double-click flower)
 - [x] Log to console and display red error text for login item and HealthKit failures
 - [x] Setting to change the breathe window appearance (dark/light/system/inverse system)

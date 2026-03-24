@@ -24,7 +24,7 @@ final class BreathingWindowController {
 
     // MARK: - Show
 
-    func show(below statusItemButton: NSStatusBarButton?, cadence: Double, appearanceStyle: BreathingSettings.AppearanceStyle = .dark, onCadenceChanged: ((Double) -> Void)? = nil) {
+    func show(below statusItemButton: NSStatusBarButton?, cadence: Double, appearanceStyle: BreathingSettings.AppearanceStyle = .dark, isFullscreen: Bool = false, onCadenceChanged: ((Double) -> Void)? = nil, onFullscreenChanged: ((Bool) -> Void)? = nil) {
         // Clean up any leftover panel (creates fresh animation each time)
         if let existing = panel {
             existing.orderOut(nil)
@@ -35,7 +35,7 @@ final class BreathingWindowController {
 
         // Build the SwiftUI view with a fresh start time
         let sessionStart = Date()
-        let breathingView = BreathingSessionView(startDate: sessionStart, cadence: cadence, onDone: { [weak self] in
+        let breathingView = BreathingSessionView(startDate: sessionStart, cadence: cadence, isFullscreen: isFullscreen, onDone: { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.onSessionDone?(sessionStart)
@@ -44,6 +44,7 @@ final class BreathingWindowController {
         }, onCadenceChanged: onCadenceChanged, onToggleFullscreen: { [weak self] fullscreen in
             Task { @MainActor [weak self] in
                 self?.setFullscreen(fullscreen)
+                onFullscreenChanged?(fullscreen)
             }
         })
         let hostingView = NSHostingView(rootView: breathingView)
@@ -97,22 +98,40 @@ final class BreathingWindowController {
 
         self.panel = panel
 
-        // Start above final position, transparent -- then slide down and fade in
-        panel.setFrameOrigin(NSPoint(x: finalOrigin.x, y: finalOrigin.y + 8))
-        panel.alphaValue = 0
-        panel.orderFrontRegardless()
+        if isFullscreen {
+            // Open directly in fullscreen — no popover animation
+            popoverFrame = NSRect(origin: finalOrigin, size: size)
+            guard let screen = panel.screen ?? NSScreen.main else { return }
+            panel.setFrame(screen.frame, display: true)
+            panel.alphaValue = 0
+            panel.orderFrontRegardless()
+            self.isFullscreen = true
 
-        NSAnimationContext.beginGrouping()
-        NSAnimationContext.current.duration = 0.3
-        NSAnimationContext.current.timingFunction = CAMediaTimingFunction(name: .easeOut)
-        panel.animator().alphaValue = 1.0
-        panel.animator().setFrameOrigin(finalOrigin)
-        NSAnimationContext.endGrouping()
+            NSAnimationContext.beginGrouping()
+            NSAnimationContext.current.duration = 0.3
+            NSAnimationContext.current.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1.0
+            NSAnimationContext.endGrouping()
+        } else {
+            // Start above final position, transparent -- then slide down and fade in
+            panel.setFrameOrigin(NSPoint(x: finalOrigin.x, y: finalOrigin.y + 8))
+            panel.alphaValue = 0
+            panel.orderFrontRegardless()
 
-        // Click outside → dismiss
-        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.dismiss()
+            NSAnimationContext.beginGrouping()
+            NSAnimationContext.current.duration = 0.3
+            NSAnimationContext.current.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1.0
+            panel.animator().setFrameOrigin(finalOrigin)
+            NSAnimationContext.endGrouping()
+        }
+
+        // Click outside → dismiss (skip in fullscreen)
+        if !isFullscreen {
+            globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.dismiss()
+                }
             }
         }
 

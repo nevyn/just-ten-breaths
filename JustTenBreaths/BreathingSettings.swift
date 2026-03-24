@@ -15,6 +15,8 @@ struct BreathingSettings: Codable, Equatable {
     var hasCompletedOnboarding: Bool = false
     /// Controls the breathing window's appearance style.
     var appearanceStyle: AppearanceStyle = .dark
+    /// Whether the breathing window opens in fullscreen mode.
+    var prefersFullscreenBreathing: Bool = false
 
     enum AppearanceStyle: String, Codable, CaseIterable {
         case dark
