@@ -211,7 +211,6 @@ struct BreathingSessionView: View {
     }
 
     private var flowerSize: CGFloat { isFullscreen ? 320 : 160 }
-    private var viewWidth: CGFloat { isFullscreen ? 500 : 250 }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -304,8 +303,9 @@ struct BreathingSessionView: View {
             .opacity(isHovering ? 0.8 : 0.01)
             .animation(.easeInOut(duration: 0.25), value: isHovering)
         }
-        .frame(width: viewWidth)
-        .background(.ultraThinMaterial, in: isFullscreen ? AnyShape(RoundedRectangle(cornerRadius: 20)) : AnyShape(PopoverShape()))
+        .frame(width: isFullscreen ? nil : 250)
+        .frame(maxWidth: isFullscreen ? .infinity : nil, maxHeight: isFullscreen ? .infinity : nil)
+        .background(.ultraThinMaterial, in: isFullscreen ? AnyShape(Rectangle()) : AnyShape(PopoverShape()))
         .onHover { isHovering = $0 }
         .onChange(of: cadence) { _, newValue in
             onCadenceChanged?(newValue)

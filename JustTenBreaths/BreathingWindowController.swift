@@ -8,8 +8,8 @@ final class BreathingWindowController {
     private var localKeyMonitor: Any?
     private var isDismissing = false
     private var isFullscreen = false
-    /// Saved origin to restore when exiting fullscreen.
-    private var popoverOrigin: NSPoint?
+    /// Saved frame to restore when exiting fullscreen.
+    private var popoverFrame: NSRect?
 
     /// Called after the window finishes dismissing (fade-out complete).
     var onDismiss: (() -> Void)?
@@ -160,7 +160,7 @@ final class BreathingWindowController {
         isFullscreen = fullscreen
 
         if fullscreen {
-            popoverOrigin = panel.frame.origin
+            popoverFrame = panel.frame
 
             // Remove click-outside monitor — fullscreen shouldn't dismiss on stray clicks
             if let monitor = globalClickMonitor {
@@ -169,22 +169,15 @@ final class BreathingWindowController {
             }
 
             guard let screen = panel.screen ?? NSScreen.main else { return }
-            let screenFrame = screen.visibleFrame
-            let contentSize = panel.contentView?.fittingSize ?? panel.frame.size
-            let x = screenFrame.midX - contentSize.width / 2
-            let y = screenFrame.midY - contentSize.height / 2
+            let screenFrame = screen.frame
 
             NSAnimationContext.beginGrouping()
             NSAnimationContext.current.duration = 0.35
             NSAnimationContext.current.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            panel.animator().setFrame(
-                NSRect(x: x, y: y, width: contentSize.width, height: contentSize.height),
-                display: true
-            )
+            panel.animator().setFrame(screenFrame, display: true)
             NSAnimationContext.endGrouping()
         } else {
-            guard let origin = popoverOrigin else { return }
-            let contentSize = panel.contentView?.fittingSize ?? panel.frame.size
+            guard let savedFrame = popoverFrame else { return }
 
             // Restore click-outside monitor
             globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
@@ -196,10 +189,7 @@ final class BreathingWindowController {
             NSAnimationContext.beginGrouping()
             NSAnimationContext.current.duration = 0.35
             NSAnimationContext.current.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            panel.animator().setFrame(
-                NSRect(x: origin.x, y: origin.y, width: contentSize.width, height: contentSize.height),
-                display: true
-            )
+            panel.animator().setFrame(savedFrame, display: true)
             NSAnimationContext.endGrouping()
         }
     }
@@ -211,7 +201,7 @@ final class BreathingWindowController {
         panel = nil
         isDismissing = false
         isFullscreen = false
-        popoverOrigin = nil
+        popoverFrame = nil
         onDismiss?()
     }
 
