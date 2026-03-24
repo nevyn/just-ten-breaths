@@ -10,7 +10,7 @@ permissions:
 jobs:
   build-and-upload:
     name: Build and Upload
-    runs-on: macos-15
+    runs-on: macos-26
 
     steps:
       - name: Checkout
@@ -48,6 +48,14 @@ jobs:
 
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
 
+      - name: Install provisioning profile
+        env:
+          PROVISIONING_PROFILE: ${{ secrets.PROVISIONING_PROFILE }}
+        run: |
+          PROFILE_PATH="$HOME/Library/Developer/Xcode/Provisioning Profiles"
+          mkdir -p "$PROFILE_PATH"
+          echo -n "$PROVISIONING_PROFILE" | base64 --decode -o "$PROFILE_PATH/just_ten_breaths.provisionprofile"
+
       - name: Build
         run: |
           xcodebuild build \
@@ -56,12 +64,10 @@ jobs:
             -configuration Release \
             -derivedDataPath build \
             MARKETING_VERSION="$VERSION" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Developer ID Application: Nevyn Bengtsson (M4Q2TE45WT)" \
             DEVELOPMENT_TEAM=M4Q2TE45WT \
             OTHER_CODE_SIGN_FLAGS=--timestamp \
             CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
-            PROVISIONING_PROFILE_SPECIFIER=""
+            JTB_APP_PROVISIONING_PROFILE="just ten breaths Developer ID"
 
       - name: Verify code signature
         run: |
@@ -128,3 +134,4 @@ jobs:
         run: |
           security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
           rm -f "$RUNNER_TEMP/certificate.p12"
+          rm -f "$HOME/Library/Developer/Xcode/Provisioning Profiles/just_ten_breaths.provisionprofile"
