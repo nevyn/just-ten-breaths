@@ -194,6 +194,7 @@ struct BreathingSessionView: View {
     @State private var isHovering = false
     @State private var isDragging = false
     @State private var isFullscreen = false
+    @State private var containerHeight: CGFloat = 0
 
     init(startDate: Date, cadence: Double, onDone: @escaping () -> Void, onCadenceChanged: ((Double) -> Void)? = nil, onToggleFullscreen: ((Bool) -> Void)? = nil) {
         self.startDate = startDate
@@ -210,7 +211,9 @@ struct BreathingSessionView: View {
         String(format: "Pace: %.1fs", cadence)
     }
 
-    private var flowerSize: CGFloat { isFullscreen ? 320 : 160 }
+    private var flowerSize: CGFloat {
+        isFullscreen ? max(160, containerHeight * 0.75) : 160
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -256,38 +259,7 @@ struct BreathingSessionView: View {
 
             // Tempo slider — always in the layout (keeps window size stable),
             // fades in only when the mouse is over the window.
-            HStack(spacing: 6) {
-                Image(systemName: "hare")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                Slider(value: $cadence, in: 2...10, step: 0.5, onEditingChanged: { isDragging = $0 })
-                    .overlay {
-                        GeometryReader { geo in
-                            let fraction = (cadence - 2.0) / (10.0 - 2.0)
-                            let thumbR: CGFloat = 8.5
-                            let thumbCenterX = thumbR + fraction * (geo.size.width - thumbR * 2)
-
-                            Text(cadenceLabel)
-                                .font(.caption2.weight(.semibold))
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background(.regularMaterial, in: Capsule())
-                                .fixedSize()
-                                .position(x: thumbCenterX, y: geo.size.height / 2)
-                                .offset(y: -24)
-                                .opacity(isDragging ? 1 : 0)
-                                .animation(.easeInOut(duration: 0.15), value: isDragging)
-                                .allowsHitTesting(false)
-                        }
-                    }
-                Image(systemName: "tortoise")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, 30)
-            .padding(.bottom, 20)
-            .opacity(isHovering ? 0.6 : 0.01)
-            .animation(.easeInOut(duration: 0.25), value: isHovering)
+            tempoSlider
         }
         .overlay(alignment: .topTrailing) {
             Button(action: toggleFullscreen) {
@@ -306,10 +278,52 @@ struct BreathingSessionView: View {
         .frame(width: isFullscreen ? nil : 250)
         .frame(maxWidth: isFullscreen ? .infinity : nil, maxHeight: isFullscreen ? .infinity : nil)
         .background(.ultraThinMaterial, in: isFullscreen ? AnyShape(Rectangle()) : AnyShape(PopoverShape()))
+        .background {
+            GeometryReader { geo in
+                Color.clear.onAppear { containerHeight = geo.size.height }
+                    .onChange(of: geo.size.height) { _, h in containerHeight = h }
+            }
+        }
         .onHover { isHovering = $0 }
         .onChange(of: cadence) { _, newValue in
             onCadenceChanged?(newValue)
         }
+    }
+
+    private var tempoSlider: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "hare")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+            Slider(value: $cadence, in: 2...10, step: 0.5, onEditingChanged: { isDragging = $0 })
+                .overlay {
+                    GeometryReader { geo in
+                        let fraction = (cadence - 2.0) / (10.0 - 2.0)
+                        let thumbR: CGFloat = 8.5
+                        let thumbCenterX = thumbR + fraction * (geo.size.width - thumbR * 2)
+
+                        Text(cadenceLabel)
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(.regularMaterial, in: Capsule())
+                            .fixedSize()
+                            .position(x: thumbCenterX, y: geo.size.height / 2)
+                            .offset(y: -24)
+                            .opacity(isDragging ? 1 : 0)
+                            .animation(.easeInOut(duration: 0.15), value: isDragging)
+                            .allowsHitTesting(false)
+                    }
+                }
+            Image(systemName: "tortoise")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: isFullscreen ? 230 : .infinity)
+        .padding(.horizontal, 30)
+        .padding(.bottom, 20)
+        .opacity(isHovering ? 0.6 : 0.01)
+        .animation(.easeInOut(duration: 0.25), value: isHovering)
     }
 
     private func toggleFullscreen() {
