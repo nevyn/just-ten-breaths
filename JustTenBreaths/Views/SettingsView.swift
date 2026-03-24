@@ -47,6 +47,11 @@ struct SettingsView: View {
                         Text("Breathing Pace")
                     }
                 }
+                Picker("Appearance", selection: $appState.settings.appearanceStyle) {
+                    ForEach(BreathingSettings.AppearanceStyle.allCases, id: \.self) { style in
+                        Text(style.displayName).tag(style)
+                    }
+                }
             }
             
             Section("Startup") {

@@ -21,7 +21,7 @@ final class BreathingWindowController {
 
     // MARK: - Show
 
-    func show(below statusItemButton: NSStatusBarButton?, cadence: Double, onCadenceChanged: ((Double) -> Void)? = nil) {
+    func show(below statusItemButton: NSStatusBarButton?, cadence: Double, appearanceStyle: BreathingSettings.AppearanceStyle = .dark, onCadenceChanged: ((Double) -> Void)? = nil) {
         // Clean up any leftover panel (creates fresh animation each time)
         if let existing = panel {
             existing.orderOut(nil)
@@ -56,7 +56,21 @@ final class BreathingWindowController {
         panel.level = .floating
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.fullScreenAuxiliary, .transient]
-        panel.appearance = NSAppearance(named: .darkAqua)
+        let appearanceName: NSAppearance.Name = {
+            switch appearanceStyle {
+            case .dark:
+                return .darkAqua
+            case .light:
+                return .aqua
+            case .system:
+                let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                return isDark ? .darkAqua : .aqua
+            case .inverseSystem:
+                let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                return isDark ? .aqua : .darkAqua
+            }
+        }()
+        panel.appearance = NSAppearance(named: appearanceName)
 
         // Calculate final position below the status item, centered horizontally
         var finalOrigin: NSPoint

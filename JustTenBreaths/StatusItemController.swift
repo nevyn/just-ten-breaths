@@ -291,6 +291,7 @@ final class StatusItemController {
         breathingWindowController.show(
             below: statusItem?.button,
             cadence: appState.settings.breathingCadence,
+            appearanceStyle: appState.settings.appearanceStyle,
             onCadenceChanged: { [weak self] newCadence in
                 self?.appState.settings.breathingCadence = newCadence
             }

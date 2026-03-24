@@ -13,6 +13,24 @@ struct BreathingSettings: Codable, Equatable {
     var logToHealth: Bool = false
     /// Set to true once the user has seen and dismissed the first-launch onboarding window.
     var hasCompletedOnboarding: Bool = false
+    /// Controls the breathing window's appearance style.
+    var appearanceStyle: AppearanceStyle = .dark
+
+    enum AppearanceStyle: String, Codable, CaseIterable {
+        case dark
+        case light
+        case system
+        case inverseSystem
+
+        var displayName: String {
+            switch self {
+            case .dark: "Dark"
+            case .light: "Light"
+            case .system: "System"
+            case .inverseSystem: "Inverse System"
+            }
+        }
+    }
     
     enum Weekday: Int, Codable, CaseIterable, Identifiable {
         case sunday = 1
