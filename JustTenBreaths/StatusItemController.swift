@@ -140,6 +140,11 @@ final class StatusItemController {
         // Handle animation state
         if appState.isBreathingTime && animationTimer == nil {
             startAnimation()
+            // Auto-open the breathing window if the user prefers immediate breathing
+            if appState.settings.autoOpenBreathingWindow && !breathingWindowController.isVisible {
+                showBreathingWindow()
+                appState.markDone()
+            }
         } else if !appState.isBreathingTime && animationTimer != nil {
             stopAnimation()
         }

@@ -17,6 +17,9 @@ struct BreathingSettings: Codable, Equatable {
     var appearanceStyle: AppearanceStyle = .dark
     /// Whether the breathing window opens in fullscreen mode.
     var prefersFullscreenBreathing: Bool = false
+    /// When true, the breathing window opens automatically at breathing time
+    /// instead of just animating the menu bar icon.
+    var autoOpenBreathingWindow: Bool = false
 
     enum AppearanceStyle: String, Codable, CaseIterable {
         case dark

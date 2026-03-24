@@ -1,10 +1,10 @@
 # Todo
 
-- [ ] Add #Preview to SettingsView, so claude can preview edits to it and make it look good
-- [ ] Setting: when it's time to breathe, choose to either animate the icon to subtly pull attention; or go immediately into full screen breathing to force user to take a break. Call this feature "Nora Mode".
 
 # Completed
 
+- [x] Auto-open breathing window setting (opens immediately at breathing time)
+- [x] SettingsView #Preview verified working
 - [x] Persist fullscreen preference across sessions
 - [x] Fullscreen mode for breathing window (button + double-click flower)
 - [x] Log to console and display red error text for login item and HealthKit failures

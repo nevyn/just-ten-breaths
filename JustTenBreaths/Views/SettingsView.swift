@@ -52,6 +52,10 @@ struct SettingsView: View {
                         Text(style.displayName).tag(style)
                     }
                 }
+                Toggle("Open automatically at breathing time", isOn: $appState.settings.autoOpenBreathingWindow)
+                Text("Opens the breathing window immediately instead of gently animating the menu bar icon.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             
             Section("Startup") {
