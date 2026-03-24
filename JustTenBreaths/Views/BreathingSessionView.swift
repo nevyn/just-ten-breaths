@@ -194,14 +194,14 @@ struct BreathingSessionView: View {
     @State private var isHovering = false
     @State private var isDragging = false
     @State private var isFullscreen = false
-    @State private var containerHeight: CGFloat = 0
 
-    init(startDate: Date, cadence: Double, onDone: @escaping () -> Void, onCadenceChanged: ((Double) -> Void)? = nil, onToggleFullscreen: ((Bool) -> Void)? = nil) {
+    init(startDate: Date, cadence: Double, isFullscreen: Bool = false, onDone: @escaping () -> Void, onCadenceChanged: ((Double) -> Void)? = nil, onToggleFullscreen: ((Bool) -> Void)? = nil) {
         self.startDate = startDate
         self.onDone = onDone
         self.onCadenceChanged = onCadenceChanged
         self.onToggleFullscreen = onToggleFullscreen
         self._cadence = State(initialValue: cadence)
+        self._isFullscreen = State(initialValue: isFullscreen)
     }
 
     /// Full breathing cycle = inhale + exhale.
@@ -211,11 +211,40 @@ struct BreathingSessionView: View {
         String(format: "Pace: %.1fs", cadence)
     }
 
-    private var flowerSize: CGFloat {
-        isFullscreen ? max(160, containerHeight * 0.75) : 160
+    var body: some View {
+        Group {
+            if isFullscreen {
+                GeometryReader { geo in
+                    breathingContent(flowerSize: geo.size.height * 0.75)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            } else {
+                breathingContent(flowerSize: 160)
+                    .frame(width: 250)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            Button(action: toggleFullscreen) {
+                Image(systemName: isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, isFullscreen ? 12 : 20)
+            .padding(.trailing, 8)
+            .opacity(isHovering ? 0.8 : 0.01)
+            .animation(.easeInOut(duration: 0.25), value: isHovering)
+        }
+        .background(.ultraThinMaterial, in: isFullscreen ? AnyShape(Rectangle()) : AnyShape(PopoverShape()))
+        .onHover { isHovering = $0 }
+        .onChange(of: cadence) { _, newValue in
+            onCadenceChanged?(newValue)
+        }
     }
 
-    var body: some View {
+    private func breathingContent(flowerSize: CGFloat) -> some View {
         VStack(spacing: 0) {
             TimelineView(.animation) { timeline in
                 let elapsed = timeline.date.timeIntervalSince(startDate)
@@ -240,6 +269,7 @@ struct BreathingSessionView: View {
                     .frame(height: isFullscreen ? 30 : 20)
 
                     PetalFlowerView(expansion: expansion, elapsed: elapsed, cycleLength: cycleLength)
+                        .scaleEffect(flowerSize / 160)
                         .frame(width: flowerSize, height: flowerSize)
                         .onTapGesture(count: 2) { toggleFullscreen() }
 
@@ -257,36 +287,7 @@ struct BreathingSessionView: View {
                 .padding(.bottom, 16)
             }
 
-            // Tempo slider — always in the layout (keeps window size stable),
-            // fades in only when the mouse is over the window.
             tempoSlider
-        }
-        .overlay(alignment: .topTrailing) {
-            Button(action: toggleFullscreen) {
-                Image(systemName: isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .padding(.top, isFullscreen ? 12 : 20)
-            .padding(.trailing, 8)
-            .opacity(isHovering ? 0.8 : 0.01)
-            .animation(.easeInOut(duration: 0.25), value: isHovering)
-        }
-        .frame(width: isFullscreen ? nil : 250)
-        .frame(maxWidth: isFullscreen ? .infinity : nil, maxHeight: isFullscreen ? .infinity : nil)
-        .background(.ultraThinMaterial, in: isFullscreen ? AnyShape(Rectangle()) : AnyShape(PopoverShape()))
-        .background {
-            GeometryReader { geo in
-                Color.clear.onAppear { containerHeight = geo.size.height }
-                    .onChange(of: geo.size.height) { _, h in containerHeight = h }
-            }
-        }
-        .onHover { isHovering = $0 }
-        .onChange(of: cadence) { _, newValue in
-            onCadenceChanged?(newValue)
         }
     }
 
@@ -330,4 +331,14 @@ struct BreathingSessionView: View {
         isFullscreen.toggle()
         onToggleFullscreen?(isFullscreen)
     }
+}
+
+#Preview("Popover") {
+    BreathingSessionView(startDate: Date(), cadence: 4.0, onDone: {})
+        .frame(width: 250, height: 350)
+}
+
+#Preview("Fullscreen") {
+    BreathingSessionView(startDate: Date(), cadence: 4.0, isFullscreen: true, onDone: {})
+        .frame(width: 1200, height: 800)
 }
