@@ -234,7 +234,7 @@ struct BreathingSessionView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.top, isFullscreen ? 12 : 20)
+            .padding(.top, isFullscreen ? 36 : 20)
             .padding(.trailing, 8)
             .opacity(isFullscreen ? 0.6 : (isHovering ? 0.8 : 0.01))
             .animation(.easeInOut(duration: 0.25), value: isHovering)
