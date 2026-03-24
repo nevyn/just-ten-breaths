@@ -7,6 +7,9 @@ final class BreathingWindowController {
     private var globalClickMonitor: Any?
     private var localKeyMonitor: Any?
     private var isDismissing = false
+    private var isFullscreen = false
+    /// Saved origin to restore when exiting fullscreen.
+    private var popoverOrigin: NSPoint?
 
     /// Called after the window finishes dismissing (fade-out complete).
     var onDismiss: (() -> Void)?
@@ -38,7 +41,11 @@ final class BreathingWindowController {
                 self.onSessionDone?(sessionStart)
                 self.dismiss()
             }
-        }, onCadenceChanged: onCadenceChanged)
+        }, onCadenceChanged: onCadenceChanged, onToggleFullscreen: { [weak self] fullscreen in
+            Task { @MainActor [weak self] in
+                self?.setFullscreen(fullscreen)
+            }
+        })
         let hostingView = NSHostingView(rootView: breathingView)
         let size = hostingView.fittingSize
 
@@ -146,12 +153,65 @@ final class BreathingWindowController {
         NSAnimationContext.endGrouping()
     }
 
+    // MARK: - Fullscreen
+
+    private func setFullscreen(_ fullscreen: Bool) {
+        guard let panel, fullscreen != isFullscreen else { return }
+        isFullscreen = fullscreen
+
+        if fullscreen {
+            popoverOrigin = panel.frame.origin
+
+            // Remove click-outside monitor — fullscreen shouldn't dismiss on stray clicks
+            if let monitor = globalClickMonitor {
+                NSEvent.removeMonitor(monitor)
+                globalClickMonitor = nil
+            }
+
+            guard let screen = panel.screen ?? NSScreen.main else { return }
+            let screenFrame = screen.visibleFrame
+            let contentSize = panel.contentView?.fittingSize ?? panel.frame.size
+            let x = screenFrame.midX - contentSize.width / 2
+            let y = screenFrame.midY - contentSize.height / 2
+
+            NSAnimationContext.beginGrouping()
+            NSAnimationContext.current.duration = 0.35
+            NSAnimationContext.current.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(
+                NSRect(x: x, y: y, width: contentSize.width, height: contentSize.height),
+                display: true
+            )
+            NSAnimationContext.endGrouping()
+        } else {
+            guard let origin = popoverOrigin else { return }
+            let contentSize = panel.contentView?.fittingSize ?? panel.frame.size
+
+            // Restore click-outside monitor
+            globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.dismiss()
+                }
+            }
+
+            NSAnimationContext.beginGrouping()
+            NSAnimationContext.current.duration = 0.35
+            NSAnimationContext.current.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(
+                NSRect(x: origin.x, y: origin.y, width: contentSize.width, height: contentSize.height),
+                display: true
+            )
+            NSAnimationContext.endGrouping()
+        }
+    }
+
     // MARK: - Private
 
     private func finishDismiss() {
         panel?.orderOut(nil)
         panel = nil
         isDismissing = false
+        isFullscreen = false
+        popoverOrigin = nil
         onDismiss?()
     }
 

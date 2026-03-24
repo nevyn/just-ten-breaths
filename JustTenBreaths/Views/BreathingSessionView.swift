@@ -187,16 +187,19 @@ struct BreathingSessionView: View {
     let startDate: Date
     let onDone: () -> Void
     let onCadenceChanged: ((Double) -> Void)?
+    let onToggleFullscreen: ((Bool) -> Void)?
 
     /// Duration of one inhale (or exhale) in seconds — mutable so the in-session slider can adjust it.
     @State private var cadence: Double
     @State private var isHovering = false
     @State private var isDragging = false
+    @State private var isFullscreen = false
 
-    init(startDate: Date, cadence: Double, onDone: @escaping () -> Void, onCadenceChanged: ((Double) -> Void)? = nil) {
+    init(startDate: Date, cadence: Double, onDone: @escaping () -> Void, onCadenceChanged: ((Double) -> Void)? = nil, onToggleFullscreen: ((Bool) -> Void)? = nil) {
         self.startDate = startDate
         self.onDone = onDone
         self.onCadenceChanged = onCadenceChanged
+        self.onToggleFullscreen = onToggleFullscreen
         self._cadence = State(initialValue: cadence)
     }
 
@@ -206,6 +209,9 @@ struct BreathingSessionView: View {
     private var cadenceLabel: String {
         String(format: "Pace: %.1fs", cadence)
     }
+
+    private var flowerSize: CGFloat { isFullscreen ? 320 : 160 }
+    private var viewWidth: CGFloat { isFullscreen ? 500 : 250 }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -220,23 +226,24 @@ struct BreathingSessionView: View {
                 let inhaleOpacity = max(0, min(1, (s - 0.15) * 5.0))
                 let exhaleOpacity = max(0, min(1, (-s - 0.15) * 5.0))
 
-                VStack(spacing: 16) {
+                VStack(spacing: isFullscreen ? 32 : 16) {
                     ZStack {
                         Text("Breathe in…")
                             .opacity(inhaleOpacity)
                         Text("Breathe out…")
                             .opacity(exhaleOpacity)
                     }
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .font(.system(size: isFullscreen ? 24 : 15, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
-                    .frame(height: 20)
+                    .frame(height: isFullscreen ? 30 : 20)
 
                     PetalFlowerView(expansion: expansion, elapsed: elapsed, cycleLength: cycleLength)
-                        .frame(width: 160, height: 160)
+                        .frame(width: flowerSize, height: flowerSize)
+                        .onTapGesture(count: 2) { toggleFullscreen() }
 
                     Button(action: onDone) {
                         Text("Done breathing")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .font(.system(size: isFullscreen ? 16 : 13, weight: .medium, design: .rounded))
                             .padding(.horizontal, 20)
                             .padding(.vertical, 8)
                     }
@@ -244,7 +251,7 @@ struct BreathingSessionView: View {
                     .tint(Color(red: 0.40, green: 0.72, blue: 0.55))
                 }
                 .padding(.horizontal, 30)
-                .padding(.top, 32)  // 12pt arrow + 20pt visual padding
+                .padding(.top, isFullscreen ? 40 : 32)
                 .padding(.bottom, 16)
             }
 
@@ -283,11 +290,30 @@ struct BreathingSessionView: View {
             .opacity(isHovering ? 0.6 : 0.01)
             .animation(.easeInOut(duration: 0.25), value: isHovering)
         }
-        .frame(width: 250)
-        .background(.ultraThinMaterial, in: PopoverShape())
+        .overlay(alignment: .topTrailing) {
+            Button(action: toggleFullscreen) {
+                Image(systemName: isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, isFullscreen ? 12 : 20)
+            .padding(.trailing, 8)
+            .opacity(isHovering ? 0.8 : 0.01)
+            .animation(.easeInOut(duration: 0.25), value: isHovering)
+        }
+        .frame(width: viewWidth)
+        .background(.ultraThinMaterial, in: isFullscreen ? AnyShape(RoundedRectangle(cornerRadius: 20)) : AnyShape(PopoverShape()))
         .onHover { isHovering = $0 }
         .onChange(of: cadence) { _, newValue in
             onCadenceChanged?(newValue)
         }
+    }
+
+    private func toggleFullscreen() {
+        isFullscreen.toggle()
+        onToggleFullscreen?(isFullscreen)
     }
 }
