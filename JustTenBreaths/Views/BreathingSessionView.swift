@@ -113,6 +113,8 @@ struct PetalFlowerView: View {
     let expansion: Double
     let elapsed: Double
     let cycleLength: Double
+    /// Multiplier for all sizes. 1.0 = base popover size, >1 for fullscreen.
+    var scale: CGFloat = 1.0
 
     private let petalCount = 7
 
@@ -125,7 +127,7 @@ struct PetalFlowerView: View {
             // Layer 1: outer petals (green)
             ForEach(0..<petalCount, id: \.self) { index in
                 let angle = Double(index) * 360.0 / Double(petalCount)
-                let offset = 5.0 + expansion * 35.0
+                let offset = (5.0 + expansion * 35.0) * scale
 
                 LeafPetal()
                     .fill(
@@ -139,8 +141,8 @@ struct PetalFlowerView: View {
                         )
                     )
                     .opacity(0.75)
-                    .frame(width: 26, height: 52)
-                    .shadow(color: Color(red: 0.15, green: 0.40, blue: 0.25).opacity(0.35), radius: 5, y: 2)
+                    .frame(width: 26 * scale, height: 52 * scale)
+                    .shadow(color: Color(red: 0.15, green: 0.40, blue: 0.25).opacity(0.35), radius: 5 * scale, y: 2 * scale)
                     .offset(y: -offset)
                     .rotationEffect(.degrees(angle + rotation1))
             }
@@ -158,7 +160,7 @@ struct PetalFlowerView: View {
 
         return ForEach(0..<petalCount, id: \.self) { index in
             let angle = Double(index) * 360.0 / Double(petalCount) + halfAngle
-            let offset = 3.0 + expansion2 * 28.0
+            let offset = (3.0 + expansion2 * 28.0) * scale
 
             LeafPetal()
                 .fill(
@@ -172,8 +174,8 @@ struct PetalFlowerView: View {
                     )
                 )
                 .opacity(0.65)
-                .frame(width: 22, height: 44)
-                .shadow(color: Color(red: 0.15, green: 0.35, blue: 0.30).opacity(0.30), radius: 4, y: 1)
+                .frame(width: 22 * scale, height: 44 * scale)
+                .shadow(color: Color(red: 0.15, green: 0.35, blue: 0.30).opacity(0.30), radius: 4 * scale, y: 1 * scale)
                 .offset(y: -offset)
                 .rotationEffect(.degrees(angle + rotation))
         }
@@ -234,7 +236,7 @@ struct BreathingSessionView: View {
             .buttonStyle(.plain)
             .padding(.top, isFullscreen ? 12 : 20)
             .padding(.trailing, 8)
-            .opacity(isHovering ? 0.8 : 0.01)
+            .opacity(isFullscreen ? 0.6 : (isHovering ? 0.8 : 0.01))
             .animation(.easeInOut(duration: 0.25), value: isHovering)
         }
         .background(.ultraThinMaterial, in: isFullscreen ? AnyShape(Rectangle()) : AnyShape(PopoverShape()))
@@ -268,8 +270,7 @@ struct BreathingSessionView: View {
                     .foregroundStyle(.secondary)
                     .frame(height: isFullscreen ? 30 : 20)
 
-                    PetalFlowerView(expansion: expansion, elapsed: elapsed, cycleLength: cycleLength)
-                        .scaleEffect(flowerSize / 160)
+                    PetalFlowerView(expansion: expansion, elapsed: elapsed, cycleLength: cycleLength, scale: flowerSize / 160)
                         .frame(width: flowerSize, height: flowerSize)
                         .onTapGesture(count: 2) { toggleFullscreen() }
 
