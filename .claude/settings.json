@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push:*)",
+      "Bash(gh run:*)",
+      "Bash(./release.sh redo:*)",
+      "mcp__xcode__XcodeListWindows",
+      "mcp__xcode__BuildProject",
+      "mcp__xcode__DocumentationSearch",
+      "mcp__xcode__RenderPreview",
+      "Read(//var/folders/hb/cdbcrk1n46sfcptzz45dd9b80000gn/T/ActionArtifacts/default/RenderPreview/**)",
+      "Read(//private/var/folders/hb/cdbcrk1n46sfcptzz45dd9b80000gn/T/ActionArtifacts/default/RenderPreview/**)"
+    ]
+  }
+}
