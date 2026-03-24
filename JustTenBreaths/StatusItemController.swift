@@ -24,6 +24,7 @@ final class StatusItemController {
         breathingWindowController.onDismiss = { [weak self] in
             guard let self else { return }
             self.statusItem?.button?.highlight(false)
+            self.update() // Restore menu now that the breathing window is gone
         }
 
         breathingWindowController.onSessionDone = { [weak self] sessionStart in
@@ -121,8 +122,10 @@ final class StatusItemController {
             #endif
         }
         
-        // Swap between menu and breathing-window click handling
-        if appState.isBreathingTime {
+        // Swap between menu and breathing-window click handling.
+        // Stay in action mode while breathing OR while the breathing window is
+        // still visible (markDone clears isBreathingTime before the window closes).
+        if appState.isBreathingTime || breathingWindowController.isVisible {
             // Remove the menu so clicks go to our action handler
             statusItem?.menu = nil
             statusItem?.button?.action = #selector(statusItemClicked)
@@ -296,6 +299,7 @@ final class StatusItemController {
     
     @objc private func breatheNowClicked() {
         showBreathingWindow()
+        update() // Switch to action mode so clicking the icon dismisses the window
     }
     
     @objc private func doneClicked() {
