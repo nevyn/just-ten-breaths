@@ -14,79 +14,69 @@ struct DayFlowerView: View {
     private let petalsPerRing = 7
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Petal ring (centered)
-            ZStack {
-                ForEach(Array(displayedSessions.enumerated()), id: \.offset) { index, session in
-                    petal(for: session, at: index)
-                }
-
-                if displayedSessions.isEmpty && showsEmptyText {
-                    Text("no breaths yet today")
-                        .font(.system(size: 13, weight: .regular, design: .rounded))
-                        .foregroundStyle(.tertiary)
-                } else if displayedSessions.isEmpty && dismissedSessions.isEmpty {
-                    // Truly empty mini: a single tiny dot so the layout doesn't collapse.
-                    Circle()
-                        .fill(Color.gray.opacity(0.18))
-                        .frame(width: size * 0.08, height: size * 0.08)
-                }
+        ZStack {
+            // All sessions (engaged + dismissed) occupy chronological slots around the ring.
+            // Engaged sessions bloom as petals; dismisses appear as small dots at the petal's root.
+            ForEach(Array(orderedSessions.enumerated()), id: \.offset) { index, session in
+                sessionMark(for: session, at: index)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Dismiss dots, anchored to the bottom of the frame.
-            if !dismissedSessions.isEmpty {
-                dismissDotRow
-                    .padding(.bottom, max(2, size * 0.02))
+            if orderedSessions.isEmpty && showsEmptyText {
+                Text("no breaths yet today")
+                    .font(.system(size: 13, weight: .regular, design: .rounded))
+                    .foregroundStyle(.tertiary)
+            } else if orderedSessions.isEmpty {
+                // Truly empty mini: a single tiny dot so the layout doesn't collapse.
+                Circle()
+                    .fill(Color.gray.opacity(0.18))
+                    .frame(width: size * 0.08, height: size * 0.08)
             }
         }
         .frame(width: size, height: size)
     }
 
-    /// Sessions that earned a petal (>= almost bucket).
-    private var displayedSessions: [BreathingSession] {
-        sessions.filter { $0.bucket != .dismissed }
-    }
-
-    /// Sessions that were dismissed early — surfaced as small rust-tinted dots at the base.
-    private var dismissedSessions: [BreathingSession] {
-        sessions.filter { $0.bucket == .dismissed }
-    }
-
-    private var dismissDotRow: some View {
-        let dotSize = max(3, size * 0.04)
-        let spacing = max(1, size * 0.018)
-        return HStack(spacing: spacing) {
-            ForEach(Array(dismissedSessions.enumerated()), id: \.offset) { _, _ in
-                Circle()
-                    .fill(Color.dismissTint)
-                    .frame(width: dotSize, height: dotSize)
-            }
-        }
+    /// All sessions for the day, sorted chronologically. Each occupies one angular slot in the
+    /// flower regardless of whether it bloomed (engaged) or stayed at the root (dismissed).
+    private var orderedSessions: [BreathingSession] {
+        sessions.sorted { $0.startedAt < $1.startedAt }
     }
 
     @ViewBuilder
-    private func petal(for session: BreathingSession, at index: Int) -> some View {
+    private func sessionMark(for session: BreathingSession, at index: Int) -> some View {
         let ring = index / petalsPerRing
         let positionInRing = index % petalsPerRing
-        let totalInThisRing = min(displayedSessions.count - ring * petalsPerRing, petalsPerRing)
-        // Petals fill clockwise from 12 o'clock as the day progresses.
+        // Sessions fill clockwise from 12 o'clock as the day progresses.
         let angle = Double(positionInRing) * 360.0 / Double(petalsPerRing)
 
         let ringScale: CGFloat = ring == 0 ? 1.0 : (ring == 1 ? 0.78 : 0.58)
         let ringOffset: CGFloat = (size * 0.13) * ringScale
-        let petalWidth: CGFloat = (size * 0.36) * ringScale
-        let petalHeight: CGFloat = (size * 0.38) * ringScale
 
-        LeafPetal()
-            .fill(session.bucket.gradient)
-            .opacity(ring == 0 ? 0.85 : 0.75)
-            .frame(width: petalWidth, height: petalHeight)
-            .shadow(color: session.bucket.shadowColor, radius: 5 * ringScale, y: 2)
-            .offset(y: -ringOffset - petalHeight / 2)
-            .rotationEffect(.degrees(angle))
-            .transition(.scale.combined(with: .opacity))
-            .id("\(index)-\(totalInThisRing)")
+        if session.bucket == .dismissed {
+            // Dot at the petal's root — same angular slot, but no bloom.
+            // Circle is rotation-invariant, so we position with explicit polar offset
+            // (rotationEffect on a symmetric shape would just rotate it in place).
+            let radians = angle * .pi / 180
+            let dx = sin(radians) * ringOffset
+            let dy = -cos(radians) * ringOffset
+            let dotSize = max(3, size * 0.05) * ringScale
+            Circle()
+                .fill(Color.dismissTint)
+                .frame(width: dotSize, height: dotSize)
+                .offset(x: dx, y: dy)
+                .transition(.scale.combined(with: .opacity))
+        } else {
+            let petalWidth: CGFloat = (size * 0.36) * ringScale
+            let petalHeight: CGFloat = (size * 0.38) * ringScale
+
+            LeafPetal()
+                .fill(session.bucket.gradient)
+                .opacity(ring == 0 ? 0.85 : 0.75)
+                .frame(width: petalWidth, height: petalHeight)
+                .shadow(color: session.bucket.shadowColor, radius: 5 * ringScale, y: 2)
+                .offset(y: -ringOffset - petalHeight / 2)
+                .rotationEffect(.degrees(angle))
+                .transition(.scale.combined(with: .opacity))
+        }
     }
 }
 
