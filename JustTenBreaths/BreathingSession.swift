@@ -60,8 +60,8 @@ enum SessionBucket {
             // distinct from the empty/unlogged state.
             return LinearGradient(
                 colors: [
-                    Color(red: 0.62, green: 0.46, blue: 0.46),
-                    Color(red: 0.50, green: 0.36, blue: 0.36),
+                    Color(red: 0.92, green: 0.56, blue: 0.56),
+                    Color(red: 0.80, green: 0.46, blue: 0.46),
                 ],
                 startPoint: .top, endPoint: .bottom
             )
@@ -116,5 +116,5 @@ enum SessionBucket {
 /// corner pips in the hour grid, corner dots in the calendar heatmap. Matches the dismissed
 /// gradient's tone so the visual identity is consistent across surfaces.
 extension Color {
-    static let dismissTint = Color(red: 0.58, green: 0.42, blue: 0.42)
+    static let dismissTint = Color(red: 0.92, green: 0.56, blue: 0.56)
 }
