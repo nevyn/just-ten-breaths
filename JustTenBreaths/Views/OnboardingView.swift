@@ -107,5 +107,5 @@ struct OnboardingView: View {
 }
 
 #Preview {
-    OnboardingView(appState: AppState()) {}
+    OnboardingView(appState: AppState.previewInstance()) {}
 }

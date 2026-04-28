@@ -1,96 +1,12 @@
 import SwiftUI
 
-// MARK: - Mock Data Model
-
-/// A single completed (or attempted) breathing session.
-struct MockSession: Identifiable {
-    let id = UUID()
-    let date: Date
-    /// Number of full breaths completed in this session.
-    let breaths: Int
-
-    var bucket: SessionBucket { SessionBucket(breaths: breaths) }
-}
-
-enum SessionBucket {
-    case dismissed   // < 7 breaths — not shown as petals
-    case almost      // 7-9
-    case gotIt       // 10-14
-    case zen         // 15+
-
-    init(breaths: Int) {
-        switch breaths {
-        case ..<7: self = .dismissed
-        case 7...9: self = .almost
-        case 10...14: self = .gotIt
-        default: self = .zen
-        }
-    }
-
-    var gradient: LinearGradient {
-        switch self {
-        case .dismissed:
-            return LinearGradient(
-                colors: [Color(white: 0.6), Color(white: 0.45)],
-                startPoint: .top, endPoint: .bottom
-            )
-        case .almost:
-            // Warm amber — "you reached for it"
-            return LinearGradient(
-                colors: [
-                    Color(red: 0.96, green: 0.80, blue: 0.40),
-                    Color(red: 0.85, green: 0.65, blue: 0.20),
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
-        case .gotIt:
-            // Same green as the breathing flower
-            return LinearGradient(
-                colors: [
-                    Color(red: 0.35, green: 0.78, blue: 0.50),
-                    Color(red: 0.25, green: 0.65, blue: 0.40),
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
-        case .zen:
-            // Brand purple
-            return LinearGradient(
-                colors: [
-                    Color(red: 0.65, green: 0.48, blue: 0.85),
-                    Color(red: 0.50, green: 0.32, blue: 0.72),
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
-        }
-    }
-
-    var shadowColor: Color {
-        switch self {
-        case .dismissed: return Color.black.opacity(0.20)
-        case .almost: return Color(red: 0.55, green: 0.40, blue: 0.10).opacity(0.35)
-        case .gotIt: return Color(red: 0.15, green: 0.40, blue: 0.25).opacity(0.35)
-        case .zen: return Color(red: 0.30, green: 0.18, blue: 0.50).opacity(0.35)
-        }
-    }
-
-    /// User-facing single-word label.
-    var displayName: String {
-        switch self {
-        case .dismissed: return "dismissed"
-        case .almost: return "almost"
-        case .gotIt: return "settled"
-        case .zen: return "zen"
-        }
-    }
-}
-
 // MARK: - Day Flower
 
 /// A flower whose petals = sessions completed today.
 /// Petals appear chronologically clockwise from 12 o'clock.
 /// Up to 7 petals fill the outer ring; petals 8-14 fill an inner ring; 15+ fill a third inner ring.
 struct DayFlowerView: View {
-    let sessions: [MockSession]
+    let sessions: [BreathingSession]
     var size: CGFloat = 180
     /// When true, show "no breaths yet today" text in the empty state. Mini flowers should suppress this.
     var showsEmptyText: Bool = true
@@ -119,21 +35,20 @@ struct DayFlowerView: View {
     }
 
     /// Sessions that earned a petal (>= almost bucket).
-    private var displayedSessions: [MockSession] {
+    private var displayedSessions: [BreathingSession] {
         sessions.filter { $0.bucket != .dismissed }
     }
 
     @ViewBuilder
-    private func petal(for session: MockSession, at index: Int) -> some View {
+    private func petal(for session: BreathingSession, at index: Int) -> some View {
         let ring = index / petalsPerRing
         let positionInRing = index % petalsPerRing
         let totalInThisRing = min(displayedSessions.count - ring * petalsPerRing, petalsPerRing)
-        // Layout: when a ring is partially full, spread petals as if it were complete (not bunched together).
         // Petals fill clockwise from 12 o'clock as the day progresses.
         let angle = Double(positionInRing) * 360.0 / Double(petalsPerRing)
 
         let ringScale: CGFloat = ring == 0 ? 1.0 : (ring == 1 ? 0.78 : 0.58)
-        let ringOffset: CGFloat = (size * 0.13) * ringScale  // distance from center
+        let ringOffset: CGFloat = (size * 0.13) * ringScale
         let petalWidth: CGFloat = (size * 0.36) * ringScale
         let petalHeight: CGFloat = (size * 0.38) * ringScale
 
@@ -144,50 +59,8 @@ struct DayFlowerView: View {
             .shadow(color: session.bucket.shadowColor, radius: 5 * ringScale, y: 2)
             .offset(y: -ringOffset - petalHeight / 2)
             .rotationEffect(.degrees(angle))
-            // Subtle staggered reveal — feels alive when sessions accumulate through the day.
             .transition(.scale.combined(with: .opacity))
-            // Suppress unused warning while keeping the variable for future per-petal tuning.
             .id("\(index)-\(totalInThisRing)")
-    }
-}
-
-// MARK: - Today Section
-
-struct TodaySection: View {
-    let sessions: [MockSession]
-
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Today")
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
-                Spacer()
-            }
-
-            DayFlowerView(sessions: sessions, size: 200)
-                .padding(.vertical, 4)
-
-            captionText
-                .font(.system(size: 12, weight: .regular, design: .rounded))
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var captionText: Text {
-        let counted = sessions.filter { $0.bucket != .dismissed }
-        let zen = counted.filter { $0.bucket == .zen }.count
-        let gotIt = counted.filter { $0.bucket == .gotIt }.count
-        let almost = counted.filter { $0.bucket == .almost }.count
-
-        if counted.isEmpty {
-            return Text("a fresh day")
-        }
-
-        var parts: [String] = ["\(counted.count) session\(counted.count == 1 ? "" : "s")"]
-        if zen > 0 { parts.append("\(zen) \(SessionBucket.zen.displayName)") }
-        if gotIt > 0 { parts.append("\(gotIt) \(SessionBucket.gotIt.displayName)") }
-        if almost > 0 { parts.append("\(almost) \(SessionBucket.almost.displayName)") }
-        return Text(parts.joined(separator: "  •  "))
     }
 }
 
@@ -195,7 +68,7 @@ struct TodaySection: View {
 
 /// Seven mini day-flowers, one per weekday. Sizes adapt to available width.
 struct WeekFlowerRow: View {
-    let week: [(label: String, sessions: [MockSession])]
+    let week: [(label: String, sessions: [BreathingSession])]
 
     private let spacing: CGFloat = 4
     private let maxMiniSize: CGFloat = 88
@@ -226,7 +99,7 @@ struct WeekFlowerRow: View {
 
 /// 7 columns (days) × N rows (work hours). Cell color = best session that hour.
 struct WeekHourGridView: View {
-    let week: [(label: String, sessions: [MockSession])]
+    let week: [(label: String, sessions: [BreathingSession])]
     let workHours: ClosedRange<Int>  // e.g. 8...17
 
     private let cellSize: CGFloat = 22
@@ -269,9 +142,9 @@ struct WeekHourGridView: View {
     }
 
     @ViewBuilder
-    private func cell(for sessions: [MockSession], hour: Int) -> some View {
+    private func cell(for sessions: [BreathingSession], hour: Int) -> some View {
         let cal = Calendar.current
-        let hourSessions = sessions.filter { cal.component(.hour, from: $0.date) == hour }
+        let hourSessions = sessions.filter { cal.component(.hour, from: $0.startedAt) == hour }
         let best = hourSessions.map { $0.bucket }.max(by: bucketRank)
 
         RoundedRectangle(cornerRadius: 4)
@@ -290,7 +163,7 @@ struct WeekHourGridView: View {
         switch b {
         case .dismissed: return 0
         case .almost: return 1
-        case .gotIt: return 2
+        case .settled: return 2
         case .zen: return 3
         }
     }
@@ -458,8 +331,8 @@ private struct SubsectionHeader: View {
 // MARK: - Whole Panel
 
 struct BreathingHistoryPrototypeView: View {
-    let today: [MockSession]
-    let week: [(label: String, sessions: [MockSession])]
+    let today: [BreathingSession]
+    let week: [(label: String, sessions: [BreathingSession])]
     let workHours: ClosedRange<Int>
     let calendar: [(date: Date, totalBreaths: Int)]
     let insights: [String]
@@ -519,60 +392,53 @@ struct BreathingHistoryPrototypeView: View {
         let counted = today.filter { $0.bucket != .dismissed }
         guard !counted.isEmpty else { return "a fresh day" }
         let zen = counted.filter { $0.bucket == .zen }.count
-        let gotIt = counted.filter { $0.bucket == .gotIt }.count
+        let settled = counted.filter { $0.bucket == .settled }.count
         let almost = counted.filter { $0.bucket == .almost }.count
         var parts: [String] = ["\(counted.count) session\(counted.count == 1 ? "" : "s")"]
         if zen > 0 { parts.append("\(zen) \(SessionBucket.zen.displayName)") }
-        if gotIt > 0 { parts.append("\(gotIt) \(SessionBucket.gotIt.displayName)") }
+        if settled > 0 { parts.append("\(settled) \(SessionBucket.settled.displayName)") }
         if almost > 0 { parts.append("\(almost) \(SessionBucket.almost.displayName)") }
         return parts.joined(separator: "  •  ")
     }
 }
 
-// MARK: - Sample Factory
+// MARK: - Mock Data (preview-only)
 
-extension BreathingHistoryPrototypeView {
-    /// A populated instance for showcasing in a real window before the data layer exists.
-    static func sample() -> BreathingHistoryPrototypeView {
-        BreathingHistoryPrototypeView(
-            today: MockData.today(seed: 7),
-            week: MockData.week(seed: 13),
-            workHours: 8...17,
-            calendar: MockData.calendar(seed: 21),
-            insights: MockData.insights
-        )
+extension BreathingSession {
+    /// Convenience for previews and mock data. Back-derives `duration` from a target breath count
+    /// so the @Model's computed `breaths` field comes out right.
+    static func mock(date: Date, breaths: Int, cadence: Double = 4.0) -> BreathingSession {
+        let duration = TimeInterval(breaths) * cadence * 2.0
+        return BreathingSession(startedAt: date, duration: duration, cadence: cadence)
     }
 }
 
-// MARK: - Mock Data
-
 private enum MockData {
-    static func today(seed: Int) -> [MockSession] {
+    static func today(seed: Int) -> [BreathingSession] {
         var rng = SeededRNG(seed: seed)
         let cal = Calendar.current
         let startOfDay = cal.startOfDay(for: Date())
-        var sessions: [MockSession] = []
-        // Simulate 5 sessions through the work day, with mixed quality.
+        var sessions: [BreathingSession] = []
         let hours: [Int] = [9, 10, 11, 13, 15]
         for hour in hours {
             let breaths = [3, 7, 8, 10, 11, 13, 15, 18].randomElement(using: &rng)!
             let date = cal.date(byAdding: .hour, value: hour, to: startOfDay)!
-            sessions.append(MockSession(date: date, breaths: breaths))
+            sessions.append(.mock(date: date, breaths: breaths))
         }
         return sessions
     }
 
-    static func emptyDay() -> [MockSession] { [] }
+    static func emptyDay() -> [BreathingSession] { [] }
 
-    static func zenDay() -> [MockSession] {
+    static func zenDay() -> [BreathingSession] {
         let cal = Calendar.current
         let start = cal.startOfDay(for: Date())
         return (8...17).map { hour in
-            MockSession(date: cal.date(byAdding: .hour, value: hour, to: start)!, breaths: 12 + (hour % 5))
+            .mock(date: cal.date(byAdding: .hour, value: hour, to: start)!, breaths: 12 + (hour % 5))
         }
     }
 
-    static func week(seed: Int) -> [(label: String, sessions: [MockSession])] {
+    static func week(seed: Int) -> [(label: String, sessions: [BreathingSession])] {
         var rng = SeededRNG(seed: seed)
         let labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         let cal = Calendar.current
@@ -582,12 +448,12 @@ private enum MockData {
         return labels.enumerated().map { i, label in
             let dayStart = cal.date(byAdding: .day, value: i, to: monday)!
             let sessionCount = [0, 1, 2, 3, 4, 5, 6, 8].randomElement(using: &rng)!
-            var sessions: [MockSession] = []
+            var sessions: [BreathingSession] = []
             for _ in 0..<sessionCount {
                 let hour = (8...17).randomElement(using: &rng)!
                 let breaths = [4, 7, 8, 10, 11, 12, 14, 16].randomElement(using: &rng)!
                 let date = cal.date(byAdding: .hour, value: hour, to: dayStart)!
-                sessions.append(MockSession(date: date, breaths: breaths))
+                sessions.append(.mock(date: date, breaths: breaths))
             }
             return (label, sessions)
         }

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct BreatheBarApp: App {
@@ -13,9 +14,22 @@ struct BreatheBarApp: App {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    let appState = AppState()
+    let appState: AppState
     private var statusItemController: StatusItemController?
     private var onboardingWindowController: OnboardingWindowController?
+
+    override init() {
+        // SwiftData container for breathing-session history. Failure here is unrecoverable
+        // (no disk, schema mismatch we can't migrate, etc.) — fail fast per the project's rules.
+        let container: ModelContainer
+        do {
+            container = try ModelContainer(for: BreathingSession.self)
+        } catch {
+            fatalError("Failed to set up ModelContainer for BreathingSession: \(error)")
+        }
+        self.appState = AppState(modelContainer: container)
+        super.init()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let onboarding = OnboardingWindowController(appState: appState)

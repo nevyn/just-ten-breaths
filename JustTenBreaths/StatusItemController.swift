@@ -10,7 +10,7 @@ final class StatusItemController {
     private let appState: AppState
     private let settingsWindowController: SettingsWindowController
     private let breathingWindowController = BreathingWindowController()
-    private let breathingHistoryWindowController = BreathingHistoryWindowController()
+    private let breathingHistoryWindowController: BreathingHistoryWindowController
     private let onboardingWindowController: OnboardingWindowController
 
     // Fixed icon size to prevent jumping
@@ -19,6 +19,7 @@ final class StatusItemController {
     init(appState: AppState, onboardingWindowController: OnboardingWindowController) {
         self.appState = appState
         self.settingsWindowController = SettingsWindowController(appState: appState)
+        self.breathingHistoryWindowController = BreathingHistoryWindowController(appState: appState)
         self.onboardingWindowController = onboardingWindowController
         setupStatusItem()
         

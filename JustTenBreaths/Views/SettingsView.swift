@@ -121,5 +121,5 @@ struct TimePicker: View {
 }
 
 #Preview {
-    SettingsView(appState: AppState())
+    SettingsView(appState: AppState.previewInstance())
 }

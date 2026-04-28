@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import SwiftData
 import ServiceManagement
 import HealthKit
 
@@ -10,13 +11,13 @@ final class AppState {
     var isBreathingTime: Bool = false
     /// Whether we have already breathed this hour. Don't reactivate if the user does their breathing break before the hour has ended.
     var breathingTimeTriggeredThisHour: Bool = false
-    
+
     /// Is the user interested in getting breathing reminders?
     var isPrimed: Bool = true
     /// Have we already auto-(un)-primed based on schedule this day? Then don't override user's settings
     var hasAutoPrimedDay: Int? = nil
     var hasAutoUnprimedDay: Int? = nil
-    
+
     var settings: BreathingSettings {
         didSet {
             settings.save()
@@ -28,16 +29,29 @@ final class AppState {
     var loginItemError: String?
     /// Error message from the last failed HealthKit operation, or nil if successful.
     var healthKitError: String?
+    /// Error message from the last failed local persistence operation, or nil if successful.
+    var persistenceError: String?
 
     let healthKitManager = HealthKitManager()
+    let modelContainer: ModelContainer
 
     private var timer: Timer?
-    
-    init() {
+
+    init(modelContainer: ModelContainer) {
+        self.modelContainer = modelContainer
         self.settings = BreathingSettings.load()
         startScheduler()
         updateLaunchAtLogin()
     }
+
+    #if DEBUG
+    /// Convenience for SwiftUI previews — uses an in-memory SwiftData container so previews don't touch disk.
+    static func previewInstance() -> AppState {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try! ModelContainer(for: BreathingSession.self, configurations: config)
+        return AppState(modelContainer: container)
+    }
+    #endif
     
     func cleanup() {
         timer?.invalidate()
@@ -54,8 +68,33 @@ final class AppState {
         isBreathingTime = false
 
         let duration = sessionEnd.timeIntervalSince(sessionStart)
+
+        // Local persistence: log every session, including short dismisses, so the
+        // history view can surface "how often did I bail" patterns.
+        if duration > 0 {
+            recordSession(startedAt: sessionStart, duration: duration)
+        }
+
+        // HealthKit: gated on user opt-in and the 60s minimum (mindful-session convention).
         guard settings.logToHealth, duration >= 60 else { return }
         Task { await healthKitManager.logMindfulSession(start: sessionStart, end: sessionEnd) }
+    }
+
+    private func recordSession(startedAt: Date, duration: TimeInterval) {
+        let context = modelContainer.mainContext
+        let session = BreathingSession(
+            startedAt: startedAt,
+            duration: duration,
+            cadence: settings.breathingCadence
+        )
+        context.insert(session)
+        do {
+            try context.save()
+            persistenceError = nil
+        } catch {
+            persistenceError = "Failed to save breathing session: \(error.localizedDescription)"
+            print("SwiftData save error: \(error)")
+        }
     }
 
     /// Requests HealthKit write authorization when logToHealth is enabled.

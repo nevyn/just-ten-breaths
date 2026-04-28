@@ -1,4 +1,5 @@
 import AppKit
+import SwiftData
 import SwiftUI
 
 /// Hosts the Breathing History panel in a translucent (liquid-glass) window.
@@ -7,6 +8,11 @@ import SwiftUI
 @MainActor
 final class BreathingHistoryWindowController {
     private var window: NSWindow?
+    private let appState: AppState
+
+    init(appState: AppState) {
+        self.appState = appState
+    }
 
     func show() {
         if let window {
@@ -15,7 +21,9 @@ final class BreathingHistoryWindowController {
             return
         }
 
-        let hostingController = NSHostingController(rootView: BreathingHistoryPrototypeView.sample())
+        let rootView = BreathingHistoryView(appState: appState)
+            .modelContainer(appState.modelContainer)
+        let hostingController = NSHostingController(rootView: rootView)
 
         let window = NSWindow(contentViewController: hostingController)
         window.title = "Breathing history"
