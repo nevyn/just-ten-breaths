@@ -10,6 +10,7 @@ final class StatusItemController {
     private let appState: AppState
     private let settingsWindowController: SettingsWindowController
     private let breathingWindowController = BreathingWindowController()
+    private let breathingHistoryWindowController = BreathingHistoryWindowController()
     private let onboardingWindowController: OnboardingWindowController
 
     // Fixed icon size to prevent jumping
@@ -62,7 +63,13 @@ final class StatusItemController {
         breatheNowItem.target = self
         breatheNowItem.image = NSImage(systemSymbolName: "wind", accessibilityDescription: "Breathe")
         menu.addItem(breatheNowItem)
-        
+
+        // Breathing history
+        let historyItem = NSMenuItem(title: "Breathing history…", action: #selector(openBreathingHistory), keyEquivalent: "")
+        historyItem.target = self
+        historyItem.image = NSImage(systemSymbolName: "calendar", accessibilityDescription: "History")
+        menu.addItem(historyItem)
+
         let separator1 = NSMenuItem.separator()
         separator1.tag = 3
         menu.addItem(separator1)
@@ -329,6 +336,10 @@ final class StatusItemController {
     
     @objc private func openSettings() {
         settingsWindowController.showSettings()
+    }
+
+    @objc private func openBreathingHistory() {
+        breathingHistoryWindowController.show()
     }
     
     @objc private func showAbout() {

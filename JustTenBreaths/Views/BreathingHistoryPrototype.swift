@@ -529,6 +529,21 @@ struct BreathingHistoryPrototypeView: View {
     }
 }
 
+// MARK: - Sample Factory
+
+extension BreathingHistoryPrototypeView {
+    /// A populated instance for showcasing in a real window before the data layer exists.
+    static func sample() -> BreathingHistoryPrototypeView {
+        BreathingHistoryPrototypeView(
+            today: MockData.today(seed: 7),
+            week: MockData.week(seed: 13),
+            workHours: 8...17,
+            calendar: MockData.calendar(seed: 21),
+            insights: MockData.insights
+        )
+    }
+}
+
 // MARK: - Mock Data
 
 private enum MockData {
