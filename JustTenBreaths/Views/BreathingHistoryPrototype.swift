@@ -134,7 +134,7 @@ struct DayFlowerView: View {
 
         let ringScale: CGFloat = ring == 0 ? 1.0 : (ring == 1 ? 0.78 : 0.58)
         let ringOffset: CGFloat = (size * 0.13) * ringScale  // distance from center
-        let petalWidth: CGFloat = (size * 0.24) * ringScale
+        let petalWidth: CGFloat = (size * 0.36) * ringScale
         let petalHeight: CGFloat = (size * 0.38) * ringScale
 
         LeafPetal()
