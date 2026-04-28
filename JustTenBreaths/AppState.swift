@@ -44,14 +44,13 @@ final class AppState {
         updateLaunchAtLogin()
     }
 
-    #if DEBUG
     /// Convenience for SwiftUI previews — uses an in-memory SwiftData container so previews don't touch disk.
+    /// Not gated on DEBUG because `#Preview` macros expand into code that type-checks in Release too.
     static func previewInstance() -> AppState {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(for: BreathingSession.self, configurations: config)
         return AppState(modelContainer: container)
     }
-    #endif
     
     func cleanup() {
         timer?.invalidate()
