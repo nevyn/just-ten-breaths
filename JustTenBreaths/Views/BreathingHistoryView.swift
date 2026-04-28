@@ -45,18 +45,18 @@ struct BreathingHistoryView: View {
         }
     }
 
-    /// Trailing 8 weeks of days (oldest -> newest), with total breaths per day.
-    private var calendarTotals: [(date: Date, totalBreaths: Int)] {
+    /// Trailing 8 weeks of days (oldest -> newest), with total breaths and dismiss count per day.
+    private var calendarTotals: [CalendarDayStats] {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         let totalDays = 8 * 7
         return (0..<totalDays).reversed().map { offset in
             let dayStart = cal.date(byAdding: .day, value: -offset, to: today)!
             let dayEnd = cal.date(byAdding: .day, value: 1, to: dayStart)!
-            let totalBreaths = sessions
-                .filter { $0.startedAt >= dayStart && $0.startedAt < dayEnd }
-                .reduce(0) { $0 + $1.breaths }
-            return (dayStart, totalBreaths)
+            let inDay = sessions.filter { $0.startedAt >= dayStart && $0.startedAt < dayEnd }
+            let totalBreaths = inDay.reduce(0) { $0 + $1.breaths }
+            let dismissCount = inDay.filter { $0.bucket == .dismissed }.count
+            return CalendarDayStats(date: dayStart, totalBreaths: totalBreaths, dismissCount: dismissCount)
         }
     }
 
@@ -64,15 +64,19 @@ struct BreathingHistoryView: View {
 
     private var insights: [String] {
         let qualifying = sessions.filter { $0.breaths >= 10 }
-        guard qualifying.count >= 10 else {
+        let dismisses = sessions.filter { $0.bucket == .dismissed }
+
+        if qualifying.count < 10 && dismisses.count < 10 {
             return ["Not enough data yet — keep breathing and patterns will appear here."]
         }
+
         var out: [String] = []
-        if let hourPhrase = mostCommonCompletionHour(qualifying) {
-            out.append(hourPhrase)
+        if qualifying.count >= 10 {
+            if let hourPhrase = mostCommonCompletionHour(qualifying) { out.append(hourPhrase) }
+            if let weekdayPhrase = bestWeekday(qualifying) { out.append(weekdayPhrase) }
         }
-        if let weekdayPhrase = bestWeekday(qualifying) {
-            out.append(weekdayPhrase)
+        if dismisses.count >= 10 {
+            if let dismissPhrase = mostCommonDismissHour(dismisses) { out.append(dismissPhrase) }
         }
         return out
     }
@@ -93,6 +97,14 @@ struct BreathingHistoryView: View {
         let formatter = DateFormatter()
         let name = formatter.weekdaySymbols[weekday - 1]  // Calendar weekday is 1-based with Sunday=1
         return "\(name)s are your strongest weekday so far."
+    }
+
+    private func mostCommonDismissHour(_ dismisses: [BreathingSession]) -> String? {
+        let cal = Calendar.current
+        let counts = Dictionary(grouping: dismisses) { cal.component(.hour, from: $0.startedAt) }
+            .mapValues { $0.count }
+        guard let (hour, _) = counts.max(by: { $0.value < $1.value }) else { return nil }
+        return "You dismiss most often around \(hourLabel(hour))."
     }
 
     private func hourLabel(_ hour: Int) -> String {

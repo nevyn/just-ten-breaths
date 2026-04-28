@@ -39,15 +39,15 @@ final class BreathingSession {
 /// Quality bucket for a session, derived from the number of breaths completed.
 /// Boundaries are deliberate product choices — see the breathing history prototype discussion.
 enum SessionBucket {
-    case dismissed   // < 7 — not displayed as a petal
-    case almost      // 7-9 — reached for it
+    case dismissed   // < 5 — clicked but bailed; high-stress signal, not a petal
+    case almost      // 5-9 — reached for it
     case settled     // 10-14 — landed the practice
     case zen         // 15+ — lingered
 
     init(breaths: Int) {
         switch breaths {
-        case ..<7: self = .dismissed
-        case 7...9: self = .almost
+        case ..<5: self = .dismissed
+        case 5...9: self = .almost
         case 10...14: self = .settled
         default: self = .zen
         }
@@ -56,8 +56,13 @@ enum SessionBucket {
     var gradient: LinearGradient {
         switch self {
         case .dismissed:
+            // Warm grey leaning rust — reads as "tired/strained" against ultraThinMaterial,
+            // distinct from the empty/unlogged state.
             return LinearGradient(
-                colors: [Color(white: 0.6), Color(white: 0.45)],
+                colors: [
+                    Color(red: 0.62, green: 0.46, blue: 0.46),
+                    Color(red: 0.50, green: 0.36, blue: 0.36),
+                ],
                 startPoint: .top, endPoint: .bottom
             )
         case .almost:
@@ -90,7 +95,7 @@ enum SessionBucket {
 
     var shadowColor: Color {
         switch self {
-        case .dismissed: return Color.black.opacity(0.20)
+        case .dismissed: return Color(red: 0.40, green: 0.20, blue: 0.20).opacity(0.30)
         case .almost: return Color(red: 0.55, green: 0.40, blue: 0.10).opacity(0.35)
         case .settled: return Color(red: 0.15, green: 0.40, blue: 0.25).opacity(0.35)
         case .zen: return Color(red: 0.30, green: 0.18, blue: 0.50).opacity(0.35)
@@ -105,4 +110,11 @@ enum SessionBucket {
         case .zen: return "zen"
         }
     }
+}
+
+/// Solid color (not a gradient) for small dismiss indicators — base dots on the day flower,
+/// corner pips in the hour grid, corner dots in the calendar heatmap. Matches the dismissed
+/// gradient's tone so the visual identity is consistent across surfaces.
+extension Color {
+    static let dismissTint = Color(red: 0.58, green: 0.42, blue: 0.42)
 }

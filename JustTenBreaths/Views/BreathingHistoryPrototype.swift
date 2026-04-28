@@ -14,21 +14,30 @@ struct DayFlowerView: View {
     private let petalsPerRing = 7
 
     var body: some View {
-        ZStack {
-            // Three rings, populated in chronological order
-            ForEach(Array(displayedSessions.enumerated()), id: \.offset) { index, session in
-                petal(for: session, at: index)
-            }
+        ZStack(alignment: .bottom) {
+            // Petal ring (centered)
+            ZStack {
+                ForEach(Array(displayedSessions.enumerated()), id: \.offset) { index, session in
+                    petal(for: session, at: index)
+                }
 
-            if displayedSessions.isEmpty && showsEmptyText {
-                Text("no breaths yet today")
-                    .font(.system(size: 13, weight: .regular, design: .rounded))
-                    .foregroundStyle(.tertiary)
-            } else if displayedSessions.isEmpty {
-                // Mini flower empty state: a single tiny dot so the layout doesn't collapse.
-                Circle()
-                    .fill(Color.gray.opacity(0.18))
-                    .frame(width: size * 0.08, height: size * 0.08)
+                if displayedSessions.isEmpty && showsEmptyText {
+                    Text("no breaths yet today")
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(.tertiary)
+                } else if displayedSessions.isEmpty && dismissedSessions.isEmpty {
+                    // Truly empty mini: a single tiny dot so the layout doesn't collapse.
+                    Circle()
+                        .fill(Color.gray.opacity(0.18))
+                        .frame(width: size * 0.08, height: size * 0.08)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // Dismiss dots, anchored to the bottom of the frame.
+            if !dismissedSessions.isEmpty {
+                dismissDotRow
+                    .padding(.bottom, max(2, size * 0.02))
             }
         }
         .frame(width: size, height: size)
@@ -37,6 +46,23 @@ struct DayFlowerView: View {
     /// Sessions that earned a petal (>= almost bucket).
     private var displayedSessions: [BreathingSession] {
         sessions.filter { $0.bucket != .dismissed }
+    }
+
+    /// Sessions that were dismissed early — surfaced as small rust-tinted dots at the base.
+    private var dismissedSessions: [BreathingSession] {
+        sessions.filter { $0.bucket == .dismissed }
+    }
+
+    private var dismissDotRow: some View {
+        let dotSize = max(3, size * 0.04)
+        let spacing = max(1, size * 0.018)
+        return HStack(spacing: spacing) {
+            ForEach(Array(dismissedSessions.enumerated()), id: \.offset) { _, _ in
+                Circle()
+                    .fill(Color.dismissTint)
+                    .frame(width: dotSize, height: dotSize)
+            }
+        }
     }
 
     @ViewBuilder
@@ -145,14 +171,32 @@ struct WeekHourGridView: View {
     private func cell(for sessions: [BreathingSession], hour: Int) -> some View {
         let cal = Calendar.current
         let hourSessions = sessions.filter { cal.component(.hour, from: $0.startedAt) == hour }
-        let best = hourSessions.map { $0.bucket }.max(by: bucketRank)
+        let engagedBuckets = hourSessions.map { $0.bucket }.filter { $0 != .dismissed }
+        let best = engagedBuckets.max(by: bucketRank)
+        let hasDismiss = hourSessions.contains { $0.bucket == .dismissed }
+        let hasEngaged = best != nil
 
         RoundedRectangle(cornerRadius: 4)
-            .fill(best?.gradient ?? LinearGradient(colors: [Color.gray.opacity(0.08)], startPoint: .top, endPoint: .bottom))
+            .fill(cellFill(best: best, hasDismiss: hasDismiss))
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
                     .strokeBorder(Color.white.opacity(0.06), lineWidth: 0.5)
             )
+            // Corner pip for "engaged AND dismissed in this hour" — the high-stress signal.
+            .overlay(alignment: .topTrailing) {
+                if hasEngaged && hasDismiss {
+                    Circle()
+                        .fill(Color.dismissTint)
+                        .frame(width: cellSize * 0.22, height: cellSize * 0.22)
+                        .padding(2)
+                }
+            }
+    }
+
+    private func cellFill(best: SessionBucket?, hasDismiss: Bool) -> LinearGradient {
+        if let best { return best.gradient }
+        if hasDismiss { return SessionBucket.dismissed.gradient }
+        return LinearGradient(colors: [Color.gray.opacity(0.08)], startPoint: .top, endPoint: .bottom)
     }
 
     private func bucketRank(_ a: SessionBucket, _ b: SessionBucket) -> Bool {
@@ -171,10 +215,17 @@ struct WeekHourGridView: View {
 
 // MARK: - Calendar Heatmap
 
-/// 8-week trailing heatmap. Cell intensity = total breaths that day.
+/// Aggregated stats for a single day, fed to the calendar heatmap.
+struct CalendarDayStats {
+    let date: Date
+    let totalBreaths: Int
+    let dismissCount: Int
+}
+
+/// 8-week trailing heatmap. Cell intensity = total breaths that day; corner dot if any dismisses.
 /// Layout: columns = weeks (oldest left), rows = weekdays (Mon top, Sun bottom).
 struct CalendarHeatmapView: View {
-    let days: [(date: Date, totalBreaths: Int)]  // ordered oldest → newest
+    let days: [CalendarDayStats]  // ordered oldest → newest
 
     private let cellSize: CGFloat = 20
     private let cellSpacing: CGFloat = 4
@@ -220,7 +271,7 @@ struct CalendarHeatmapView: View {
         }
     }
 
-    private func monthLabel(for week: [(date: Date, totalBreaths: Int)], previousWeek: [(date: Date, totalBreaths: Int)]?) -> String {
+    private func monthLabel(for week: [CalendarDayStats], previousWeek: [CalendarDayStats]?) -> String {
         guard let firstDate = week.first?.date else { return "" }
         let cal = Calendar.current
         let thisMonth = cal.component(.month, from: firstDate)
@@ -234,29 +285,39 @@ struct CalendarHeatmapView: View {
     }
 
     @ViewBuilder
-    private func cell(for day: (date: Date, totalBreaths: Int)?, max: Int) -> some View {
-        if let day, day.totalBreaths > 0 {
-            let intensity = min(1.0, Double(day.totalBreaths) / Double(max))
-            RoundedRectangle(cornerRadius: 3)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.35, green: 0.78, blue: 0.50).opacity(0.30 + intensity * 0.70),
-                            Color(red: 0.25, green: 0.65, blue: 0.40).opacity(0.30 + intensity * 0.70),
-                        ],
-                        startPoint: .top, endPoint: .bottom
+    private func cell(for day: CalendarDayStats?, max: Int) -> some View {
+        ZStack(alignment: .topTrailing) {
+            if let day, day.totalBreaths > 0 {
+                let intensity = min(1.0, Double(day.totalBreaths) / Double(max))
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.35, green: 0.78, blue: 0.50).opacity(0.30 + intensity * 0.70),
+                                Color(red: 0.25, green: 0.65, blue: 0.40).opacity(0.30 + intensity * 0.70),
+                            ],
+                            startPoint: .top, endPoint: .bottom
+                        )
                     )
-                )
-        } else {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color.gray.opacity(0.08))
+            } else {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.gray.opacity(0.08))
+            }
+
+            // Dismiss indicator — small rust dot in the corner if the day had any dismisses.
+            if let day, day.dismissCount > 0 {
+                Circle()
+                    .fill(Color.dismissTint)
+                    .frame(width: cellSize * 0.22, height: cellSize * 0.22)
+                    .padding(2)
+            }
         }
     }
 
-    private func groupedByWeek(days: [(date: Date, totalBreaths: Int)]) -> [[(date: Date, totalBreaths: Int)]] {
+    private func groupedByWeek(days: [CalendarDayStats]) -> [[CalendarDayStats]] {
         let cal = Calendar.current
-        var weeks: [[(date: Date, totalBreaths: Int)]] = []
-        var current: [(date: Date, totalBreaths: Int)] = []
+        var weeks: [[CalendarDayStats]] = []
+        var current: [CalendarDayStats] = []
         var lastWeekOfYear: Int? = nil
 
         for day in days {
@@ -334,7 +395,7 @@ struct BreathingHistoryPrototypeView: View {
     let today: [BreathingSession]
     let week: [(label: String, sessions: [BreathingSession])]
     let workHours: ClosedRange<Int>
-    let calendar: [(date: Date, totalBreaths: Int)]
+    let calendar: [CalendarDayStats]
     let insights: [String]
 
     var body: some View {
@@ -390,14 +451,20 @@ struct BreathingHistoryPrototypeView: View {
 
     private var todayCaption: String {
         let counted = today.filter { $0.bucket != .dismissed }
-        guard !counted.isEmpty else { return "a fresh day" }
+        let dismissed = today.filter { $0.bucket == .dismissed }.count
+        if counted.isEmpty && dismissed == 0 { return "a fresh day" }
+
+        var parts: [String] = []
+        if !counted.isEmpty {
+            parts.append("\(counted.count) session\(counted.count == 1 ? "" : "s")")
+        }
         let zen = counted.filter { $0.bucket == .zen }.count
         let settled = counted.filter { $0.bucket == .settled }.count
         let almost = counted.filter { $0.bucket == .almost }.count
-        var parts: [String] = ["\(counted.count) session\(counted.count == 1 ? "" : "s")"]
         if zen > 0 { parts.append("\(zen) \(SessionBucket.zen.displayName)") }
         if settled > 0 { parts.append("\(settled) \(SessionBucket.settled.displayName)") }
         if almost > 0 { parts.append("\(almost) \(SessionBucket.almost.displayName)") }
+        if dismissed > 0 { parts.append("\(dismissed) \(SessionBucket.dismissed.displayName)") }
         return parts.joined(separator: "  •  ")
     }
 }
@@ -419,9 +486,10 @@ private enum MockData {
         let cal = Calendar.current
         let startOfDay = cal.startOfDay(for: Date())
         var sessions: [BreathingSession] = []
-        let hours: [Int] = [9, 10, 11, 13, 15]
+        // Mix engaged sessions with a couple of dismisses (1-3 breaths) to exercise the new visualizations.
+        let hours: [Int] = [9, 10, 11, 13, 15, 16]
         for hour in hours {
-            let breaths = [3, 7, 8, 10, 11, 13, 15, 18].randomElement(using: &rng)!
+            let breaths = [1, 2, 3, 7, 8, 10, 11, 13, 15, 18].randomElement(using: &rng)!
             let date = cal.date(byAdding: .hour, value: hour, to: startOfDay)!
             sessions.append(.mock(date: date, breaths: breaths))
         }
@@ -451,7 +519,8 @@ private enum MockData {
             var sessions: [BreathingSession] = []
             for _ in 0..<sessionCount {
                 let hour = (8...17).randomElement(using: &rng)!
-                let breaths = [4, 7, 8, 10, 11, 12, 14, 16].randomElement(using: &rng)!
+                // Spread includes 1-4 breaths so dismisses appear across the week.
+                let breaths = [1, 2, 3, 4, 7, 8, 10, 11, 12, 14, 16].randomElement(using: &rng)!
                 let date = cal.date(byAdding: .hour, value: hour, to: dayStart)!
                 sessions.append(.mock(date: date, breaths: breaths))
             }
@@ -459,7 +528,7 @@ private enum MockData {
         }
     }
 
-    static func calendar(seed: Int, weeks: Int = 8) -> [(date: Date, totalBreaths: Int)] {
+    static func calendar(seed: Int, weeks: Int = 8) -> [CalendarDayStats] {
         var rng = SeededRNG(seed: seed)
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
@@ -471,7 +540,13 @@ private enum MockData {
             let total = isWeekend
                 ? [0, 0, 0, 0, 5, 12].randomElement(using: &rng)!
                 : [0, 0, 8, 14, 20, 30, 45, 60, 80, 110].randomElement(using: &rng)!
-            return (date, total)
+            // Dismisses cluster on heavier-engagement weekdays (stress correlates with engagement).
+            let dismissCount = isWeekend
+                ? [0, 0, 0, 0, 1].randomElement(using: &rng)!
+                : (total > 30
+                    ? [0, 0, 1, 1, 2, 3, 4].randomElement(using: &rng)!
+                    : [0, 0, 0, 1, 2].randomElement(using: &rng)!)
+            return CalendarDayStats(date: date, totalBreaths: total, dismissCount: dismissCount)
         }
     }
 
