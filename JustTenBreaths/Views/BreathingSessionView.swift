@@ -344,11 +344,11 @@ struct BreathingSessionView: View {
         case 10:
             // Settled: green wash + a gentle burst of green particles.
             triggerFlash(Color(red: 0.65, green: 0.95, blue: 0.75))
-            emitParticles(color: Color(red: 0.40, green: 0.78, blue: 0.55), count: 8)
+            emitParticles(color: Color(red: 0.40, green: 0.78, blue: 0.55), count: 14)
         case 15:
             // Zen: lavender wash + a denser purple burst.
             triggerFlash(Color(red: 0.85, green: 0.72, blue: 1.0))
-            emitParticles(color: Color(red: 0.65, green: 0.48, blue: 0.85), count: 14)
+            emitParticles(color: Color(red: 0.65, green: 0.48, blue: 0.85), count: 20)
         default:
             break
         }
@@ -357,10 +357,10 @@ struct BreathingSessionView: View {
     private func triggerFlash(_ color: Color) {
         flashColor = color
         flashOpacity = 0
-        withAnimation(.easeOut(duration: 0.4)) { flashOpacity = 0.20 }
+        withAnimation(.easeOut(duration: 0.7)) { flashOpacity = 0.20 }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(450))
-            withAnimation(.easeIn(duration: 0.9)) { flashOpacity = 0 }
+            withAnimation(.easeIn(duration: 1.8)) { flashOpacity = 0 }
         }
     }
 
@@ -376,7 +376,7 @@ struct BreathingSessionView: View {
         particles.append(contentsOf: newParticles)
         let ids = Set(newParticles.map { $0.id })
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(5))
             particles.removeAll { ids.contains($0.id) }
         }
     }
@@ -447,7 +447,7 @@ private struct BreathingParticleView: View {
                     y: sin(particle.angle) * particle.distance * phase)
             .opacity(1.0 - phase)
             .onAppear {
-                withAnimation(.easeOut(duration: 1.6)) { phase = 1.0 }
+                withAnimation(.easeOut(duration: 4.5)) { phase = 1.0 }
             }
     }
 }
