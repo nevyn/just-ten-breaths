@@ -197,6 +197,13 @@ struct BreathingSessionView: View {
     @State private var isDragging = false
     @State private var isFullscreen = false
 
+    /// The highest threshold (5/10/15 breaths) we've fired a celebration for this session.
+    /// Locked monotonic so a mid-session cadence change doesn't re-fire.
+    @State private var highestThresholdReached: Int = 0
+    @State private var flashColor: Color? = nil
+    @State private var flashOpacity: Double = 0
+    @State private var particles: [BreathingParticle] = []
+
     init(startDate: Date, cadence: Double, isFullscreen: Bool = false, onDone: @escaping () -> Void, onCadenceChanged: ((Double) -> Void)? = nil, onToggleFullscreen: ((Bool) -> Void)? = nil) {
         self.startDate = startDate
         self.onDone = onDone
@@ -211,6 +218,10 @@ struct BreathingSessionView: View {
 
     private var cadenceLabel: String {
         String(format: "Pace: %.1fs", cadence)
+    }
+
+    private var backgroundShape: AnyShape {
+        isFullscreen ? AnyShape(Rectangle()) : AnyShape(PopoverShape())
     }
 
     var body: some View {
@@ -239,7 +250,15 @@ struct BreathingSessionView: View {
             .opacity(isFullscreen ? 0.6 : (isHovering ? 0.8 : 0.01))
             .animation(.easeInOut(duration: 0.25), value: isHovering)
         }
-        .background(.ultraThinMaterial, in: isFullscreen ? AnyShape(Rectangle()) : AnyShape(PopoverShape()))
+        .background(.ultraThinMaterial, in: backgroundShape)
+        .overlay {
+            // Threshold celebration flash — clipped to the same shape as the background
+            // so the wash respects the rounded popover corners.
+            backgroundShape
+                .fill(flashColor ?? .clear)
+                .opacity(flashOpacity)
+                .allowsHitTesting(false)
+        }
         .onHover { isHovering = $0 }
         .onChange(of: cadence) { _, newValue in
             onCadenceChanged?(newValue)
@@ -258,6 +277,7 @@ struct BreathingSessionView: View {
                 let s = sin(elapsed * .pi * 2.0 / cycleLength)
                 let inhaleOpacity = max(0, min(1, (s - 0.15) * 5.0))
                 let exhaleOpacity = max(0, min(1, (-s - 0.15) * 5.0))
+                let breathsCompleted = Int(elapsed / cycleLength)
 
                 VStack(spacing: isFullscreen ? 32 : 16) {
                     ZStack {
@@ -272,6 +292,12 @@ struct BreathingSessionView: View {
 
                     PetalFlowerView(expansion: expansion, elapsed: elapsed, cycleLength: cycleLength, scale: flowerSize / 160)
                         .frame(width: flowerSize, height: flowerSize)
+                        .overlay {
+                            // Particles emanate from the flower's center on settled/zen crossings.
+                            ForEach(particles) { particle in
+                                BreathingParticleView(particle: particle)
+                            }
+                        }
                         .onTapGesture(count: 2) { toggleFullscreen() }
 
                     Button(action: onDone) {
@@ -286,9 +312,72 @@ struct BreathingSessionView: View {
                 .padding(.horizontal, 30)
                 .padding(.top, isFullscreen ? 40 : 32)
                 .padding(.bottom, 16)
+                .onChange(of: breathsCompleted) { _, newValue in
+                    checkThresholds(breathsCompleted: newValue)
+                }
             }
 
             tempoSlider
+        }
+    }
+
+    // MARK: - Threshold celebrations
+
+    private func checkThresholds(breathsCompleted: Int) {
+        if breathsCompleted >= 15, highestThresholdReached < 15 {
+            highestThresholdReached = 15
+            triggerCelebration(threshold: 15)
+        } else if breathsCompleted >= 10, highestThresholdReached < 10 {
+            highestThresholdReached = 10
+            triggerCelebration(threshold: 10)
+        } else if breathsCompleted >= 5, highestThresholdReached < 5 {
+            highestThresholdReached = 5
+            triggerCelebration(threshold: 5)
+        }
+    }
+
+    private func triggerCelebration(threshold: Int) {
+        switch threshold {
+        case 5:
+            // Almost: just a soft yellow wash.
+            triggerFlash(Color(red: 1.0, green: 0.92, blue: 0.55))
+        case 10:
+            // Settled: green wash + a gentle burst of green particles.
+            triggerFlash(Color(red: 0.65, green: 0.95, blue: 0.75))
+            emitParticles(color: Color(red: 0.40, green: 0.78, blue: 0.55), count: 8)
+        case 15:
+            // Zen: lavender wash + a denser purple burst.
+            triggerFlash(Color(red: 0.85, green: 0.72, blue: 1.0))
+            emitParticles(color: Color(red: 0.65, green: 0.48, blue: 0.85), count: 14)
+        default:
+            break
+        }
+    }
+
+    private func triggerFlash(_ color: Color) {
+        flashColor = color
+        flashOpacity = 0
+        withAnimation(.easeOut(duration: 0.4)) { flashOpacity = 0.20 }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(450))
+            withAnimation(.easeIn(duration: 0.9)) { flashOpacity = 0 }
+        }
+    }
+
+    private func emitParticles(color: Color, count: Int) {
+        let newParticles = (0..<count).map { _ in
+            BreathingParticle(
+                color: color,
+                angle: Double.random(in: 0..<(2 * .pi)),
+                distance: CGFloat.random(in: 60...140),
+                size: CGFloat.random(in: 3.5...6.0)
+            )
+        }
+        particles.append(contentsOf: newParticles)
+        let ids = Set(newParticles.map { $0.id })
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            particles.removeAll { ids.contains($0.id) }
         }
     }
 
@@ -331,6 +420,35 @@ struct BreathingSessionView: View {
     private func toggleFullscreen() {
         isFullscreen.toggle()
         onToggleFullscreen?(isFullscreen)
+    }
+}
+
+// MARK: - Particles
+
+/// One emitted celebration particle. Each renders as a small circle that drifts outward
+/// from the flower's center along `angle` while fading.
+struct BreathingParticle: Identifiable {
+    let id = UUID()
+    let color: Color
+    let angle: Double      // radians
+    let distance: CGFloat  // final distance from origin
+    let size: CGFloat
+}
+
+private struct BreathingParticleView: View {
+    let particle: BreathingParticle
+    @State private var phase: Double = 0  // 0 = at origin, 1 = fully drifted out + faded
+
+    var body: some View {
+        Circle()
+            .fill(particle.color)
+            .frame(width: particle.size, height: particle.size)
+            .offset(x: cos(particle.angle) * particle.distance * phase,
+                    y: sin(particle.angle) * particle.distance * phase)
+            .opacity(1.0 - phase)
+            .onAppear {
+                withAnimation(.easeOut(duration: 1.6)) { phase = 1.0 }
+            }
     }
 }
 
