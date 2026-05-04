@@ -7,6 +7,10 @@
 - [ ] Surface `persistenceError` and `healthKitError` in the History or Settings UI (they're set on `AppState` but not yet displayed).
 - [ ] Settings: "Clear breathing history…" destructive action.
 - [ ] Export breathing sessions to CSV.
+- [ ] When changing pace during a breathing session, offset phase so that the animation doesn't jump while changing the slider.
+- [ ] Iterate on breathing history window (general polish pass — proportions, spacing, color tuning, edge cases).
+- [ ] Breathing history: paginate / toggle between weeks to see older historical data (the heatmap currently only shows the trailing 8 weeks).
+- [ ] Add Sparkle / autoupdate. Look at how Melur (Nevyn's other macOS app) wired it for a working reference.
 
 # Completed
 
