@@ -27,7 +27,7 @@ final class BreathingWindowController {
     func show(below statusItemButton: NSStatusBarButton?, cadence: Double, appearanceStyle: BreathingSettings.AppearanceStyle = .dark, isFullscreen: Bool = false, onCadenceChanged: ((Double) -> Void)? = nil, onFullscreenChanged: ((Bool) -> Void)? = nil) {
         // Clean up any leftover panel (creates fresh animation each time)
         if let existing = panel {
-            existing.orderOut(nil)
+            teardown(existing)
             panel = nil
         }
         removeMonitors()
@@ -164,7 +164,7 @@ final class BreathingWindowController {
         NSAnimationContext.current.timingFunction = CAMediaTimingFunction(name: .easeIn)
         NSAnimationContext.current.completionHandler = { [weak self] in
             Task { @MainActor [weak self] in
-                self?.finishDismiss()
+                self?.finishDismiss(panel)
             }
         }
         panel.animator().alphaValue = 0
@@ -215,13 +215,24 @@ final class BreathingWindowController {
 
     // MARK: - Private
 
-    private func finishDismiss() {
-        panel?.orderOut(nil)
-        panel = nil
-        isDismissing = false
-        isFullscreen = false
-        popoverFrame = nil
+    private func finishDismiss(_ dismissedPanel: NSPanel) {
+        teardown(dismissedPanel)
+        // Identity check: show() may have replaced the panel mid-animation.
+        if panel === dismissedPanel {
+            panel = nil
+            isDismissing = false
+            isFullscreen = false
+            popoverFrame = nil
+        }
         onDismiss?()
+    }
+
+    /// The hosting view's TimelineView display link outlives orderOut and keeps
+    /// re-rendering the invisible panel at full refresh rate; destroying the
+    /// content view is what actually stops it.
+    private func teardown(_ panel: NSPanel) {
+        panel.contentView = nil
+        panel.close()
     }
 
     private func removeMonitors() {
