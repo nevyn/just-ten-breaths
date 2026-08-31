@@ -10,9 +10,9 @@
 - [ ] When changing pace during a breathing session, offset phase so that the animation doesn't jump while changing the slider.
 - [ ] Iterate on breathing history window (general polish pass — proportions, spacing, color tuning, edge cases).
 - [ ] Breathing history: paginate / toggle between weeks to see older historical data (the heatmap currently only shows the trailing 8 weeks).
-- [ ] Add Sparkle / autoupdate. Look at how Melur (Nevyn's other macOS app) wired it for a working reference.
-
 # Completed
+
+- [x] Add Sparkle / autoupdate. Sparkle 2 via SPM; appcast on GitHub Pages, generated+EdDSA-signed in the release workflow; "Check for updates…" menu item; sandboxed XPC installer service. Build numbers now monotonic (Sparkle compares CFBundleVersion).
 
 - [x] Breathing history feature backed by SwiftData: "Breathing history…" menu item opens a translucent panel with Today (petal flower, color = bucket: amber=almost 7-9, green=settled 10-14, purple=zen 15+), This Week (mini flower row + 7×N hour grid), Recent Weeks calendar heatmap, and derived Patterns insights. Persists via `@Model BreathingSession`; data file is queryable with `sqlite3`.
 

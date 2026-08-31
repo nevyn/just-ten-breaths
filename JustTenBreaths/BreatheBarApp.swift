@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Sparkle
 
 @main
 struct BreatheBarApp: App {
@@ -17,6 +18,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState: AppState
     private var statusItemController: StatusItemController?
     private var onboardingWindowController: OnboardingWindowController?
+    /// Sparkle auto-updater; checks the appcast on its default schedule from launch.
+    private let updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
 
     override init() {
         // SwiftData container for breathing-session history. Failure here is unrecoverable
@@ -34,7 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let onboarding = OnboardingWindowController(appState: appState)
         onboardingWindowController = onboarding
-        statusItemController = StatusItemController(appState: appState, onboardingWindowController: onboarding)
+        statusItemController = StatusItemController(appState: appState, onboardingWindowController: onboarding, updaterController: updaterController)
         onboarding.showIfNeeded()
         setupObservation()
     }

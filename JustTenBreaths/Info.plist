@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict/>
+<dict>
+	<key>SUFeedURL</key>
+	<string>https://nevyn.github.io/just-ten-breaths/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>cKbYK8A4ax5nBCma4ldAvfjzDZY8HNbXVR+JXEg9r/U=</string>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+</dict>
 </plist>

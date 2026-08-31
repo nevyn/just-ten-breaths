@@ -77,6 +77,27 @@ jobs:
             CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
             JTB_APP_PROVISIONING_PROFILE="just ten breaths Developer ID"
 
+      - name: Re-sign Sparkle helpers with Developer ID
+        run: |
+          APP="build/Build/Products/Release/just ten breaths.app"
+          SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
+          IDENTITY="Developer ID Application: Nevyn Bengtsson (M4Q2TE45WT)"
+
+          # Innermost first. The XPC services keep their own sandbox
+          # entitlements (required for a sandboxed host app).
+          codesign -f -s "$IDENTITY" -o runtime --timestamp \
+            --preserve-metadata=entitlements \
+            "$SPARKLE/Versions/B/XPCServices/Downloader.xpc"
+          codesign -f -s "$IDENTITY" -o runtime --timestamp \
+            --preserve-metadata=entitlements \
+            "$SPARKLE/Versions/B/XPCServices/Installer.xpc"
+          codesign -f -s "$IDENTITY" -o runtime --timestamp \
+            "$SPARKLE/Versions/B/Autoupdate"
+          codesign -f -s "$IDENTITY" -o runtime --timestamp \
+            "$SPARKLE/Versions/B/Updater.app"
+          codesign -f -s "$IDENTITY" -o runtime --timestamp \
+            "$SPARKLE"
+
       - name: Verify code signature
         run: |
           echo "--- Signature info ---"
@@ -137,9 +158,54 @@ jobs:
             "just-ten-breaths_${VERSION}.zip" \
             --clobber
 
+      - name: Generate and publish appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SPARKLE_BIN="build/SourcePackages/artifacts/sparkle/Sparkle/bin"
+
+          KEY_FILE="$RUNNER_TEMP/sparkle_private_key"
+          echo -n "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
+
+          # Release notes (markdown) named like the zip get embedded in the item.
+          mkdir -p updates
+          cp "just-ten-breaths_${VERSION}.zip" updates/
+          printf '%s' "$RELEASE_BODY" > "updates/just-ten-breaths_${VERSION}.md"
+
+          "$SPARKLE_BIN/generate_appcast" \
+            --ed-key-file "$KEY_FILE" \
+            --download-url-prefix "https://github.com/nevyn/just-ten-breaths/releases/download/${{ github.event.release.tag_name }}/" \
+            --link "https://github.com/nevyn/just-ten-breaths" \
+            --embed-release-notes \
+            --maximum-deltas 0 \
+            -o "$PWD/appcast.xml" \
+            updates
+
+          rm -f "$KEY_FILE"
+
+          # The appcast must carry a signature once SUPublicEDKey ships in the app.
+          if ! grep -q 'sparkle:edSignature' appcast.xml; then
+            echo "::error::appcast.xml has no edSignature — SPARKLE_PRIVATE_KEY missing or invalid"
+            exit 1
+          fi
+
+          # Publish to the GitHub Pages site (root of gh-pages branch).
+          git fetch origin gh-pages
+          git worktree add ghp origin/gh-pages
+          cp appcast.xml ghp/
+          cd ghp
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add appcast.xml
+          git commit -m "Appcast for ${{ github.event.release.tag_name }}"
+          git push origin HEAD:gh-pages
+
       - name: Clean up
         if: always()
         run: |
           security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
           rm -f "$RUNNER_TEMP/certificate.p12"
+          rm -f "$RUNNER_TEMP/sparkle_private_key"
           rm -rf "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"

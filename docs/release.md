@@ -34,6 +34,24 @@ e.g. it can't authenticate from an agent's shell).
 | `APPLE_ID` | Apple ID email |
 | `APPLE_ID_PASSWORD` | App-specific password for notarization |
 
+## Sparkle / autoupdate
+
+- Feed: `https://nevyn.github.io/just-ten-breaths/appcast.xml` (`SUFeedURL` in Info.plist,
+  file lives at the root of the `gh-pages` branch). Enclosures point at GitHub Release
+  assets.
+- The release workflow generates the appcast (`generate_appcast --embed-release-notes`
+  with the GitHub release body as markdown notes), EdDSA-signs the zip with the
+  `SPARKLE_PRIVATE_KEY` repository secret, and pushes `appcast.xml` to `gh-pages`. The job
+  fails if the appcast comes out unsigned.
+- The public key is `SUPublicEDKey` in Info.plist; the private key also lives in the
+  owner's login Keychain ("Private key for signing Sparkle updates").
+- **Build numbers are monotonic across versions** (release.sh increments, never resets):
+  Sparkle compares `CFBundleVersion`, so a reset would stop updates from being offered.
+- Sandbox: the app has `network.client` (downloads its own updates) and
+  `SUEnableInstallerLauncherService` (Installer XPC). CI re-signs Sparkle's helpers with
+  Developer ID, preserving the XPC services' entitlements — innermost first.
+- Users on ≤2.2 predate Sparkle and must download once manually; 2.3+ autoupdates.
+
 ## Verifying an artifact
 
 ```bash

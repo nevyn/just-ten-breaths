@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AA0000010000000000000020 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000010000000000000021 /* Sparkle */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		AA000001000000000000000A /* just ten breaths.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "just ten breaths.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA0000010000000000000020 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = "just ten breaths";
 			packageProductDependencies = (
+				AA0000010000000000000021 /* Sparkle */,
 			);
 			productName = BreatheBar;
 			productReference = AA000001000000000000000A /* just ten breaths.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = AA000001000000000000000F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AA0000010000000000000022 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AA0000010000000000000010 /* Products */;
 			projectDirPath = "";
@@ -330,6 +339,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AA0000010000000000000022 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA0000010000000000000021 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AA0000010000000000000022 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = AA0000010000000000000014 /* Project object */;
 }

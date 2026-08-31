@@ -185,12 +185,16 @@ else
     fi
 fi
 
-# Reset build number to 1 for new versions.
+# Increment the build number. Sparkle compares CFBundleVersion, so it must grow
+# monotonically across releases -- never reset it.
+CURRENT_BUILD="$(grep -m1 'CURRENT_PROJECT_VERSION' "$PBXPROJ" \
+    | sed 's/.*CURRENT_PROJECT_VERSION = \(.*\);.*/\1/' | tr -d '\t ')"
+NEW_BUILD=$((CURRENT_BUILD + 1))
 if [[ "$DRY_RUN" == true ]]; then
-    echo "  [dry run] sed: CURRENT_PROJECT_VERSION → 1 in $PBXPROJ"
+    echo "  [dry run] sed: CURRENT_PROJECT_VERSION = ${CURRENT_BUILD} → ${NEW_BUILD} in $PBXPROJ"
 else
     sed -i '' \
-        "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = 1;/g" \
+        "s/CURRENT_PROJECT_VERSION = ${CURRENT_BUILD};/CURRENT_PROJECT_VERSION = ${NEW_BUILD};/g" \
         "$PBXPROJ"
 fi
 

@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Sparkle
 
 @MainActor
 final class StatusItemController {
@@ -12,15 +13,17 @@ final class StatusItemController {
     private let breathingWindowController = BreathingWindowController()
     private let breathingHistoryWindowController: BreathingHistoryWindowController
     private let onboardingWindowController: OnboardingWindowController
+    private let updaterController: SPUStandardUpdaterController
 
     // Fixed icon size to prevent jumping
     private let iconSize: CGFloat = 22
 
-    init(appState: AppState, onboardingWindowController: OnboardingWindowController) {
+    init(appState: AppState, onboardingWindowController: OnboardingWindowController, updaterController: SPUStandardUpdaterController) {
         self.appState = appState
         self.settingsWindowController = SettingsWindowController(appState: appState)
         self.breathingHistoryWindowController = BreathingHistoryWindowController(appState: appState)
         self.onboardingWindowController = onboardingWindowController
+        self.updaterController = updaterController
         setupStatusItem()
         
         breathingWindowController.onDismiss = { [weak self] in
@@ -86,6 +89,12 @@ final class StatusItemController {
         aboutItem.target = self
         aboutItem.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: "About")
         menu.addItem(aboutItem)
+
+        // Check for updates (Sparkle validates enablement via NSMenuItemValidation)
+        let updatesItem = NSMenuItem(title: "Check for updates…", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
+        updatesItem.target = updaterController
+        updatesItem.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: "Updates")
+        menu.addItem(updatesItem)
 
         #if DEBUG
         menu.addItem(NSMenuItem.separator())

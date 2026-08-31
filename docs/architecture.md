@@ -45,8 +45,10 @@ read the comments in `AppState.updateScheduler()` carefully — it's been fixed 
 
 ## Dependencies
 
-None. Keep it that way unless a dependency earns its keep (record license + attribution in
-LICENSES.md with the first one).
+Exactly one: **Sparkle 2** (SPM) for autoupdate — license recorded in LICENSES.md. The
+updater lives on `AppDelegate` (`SPUStandardUpdaterController`); the status menu's "Check
+for updates…" item targets it directly. Feed and signing details: release.md. Don't add
+further dependencies unless they earn their keep.
 
 ## Website
 
