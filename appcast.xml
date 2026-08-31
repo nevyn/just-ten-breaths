@@ -1,0 +1,18 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>just ten breaths</title>
+        <item>
+            <title>2.3</title>
+            <pubDate>Mon, 31 Aug 2026 17:06:21 +0000</pubDate>
+            <link>https://github.com/nevyn/just-ten-breaths</link>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>2.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description sparkle:format="markdown"><![CDATA[- **Automatic updates.** just ten breaths now checks for new versions on its own and offers to install them, so you stop missing releases. There's also a **Check for updates…** item in the menu whenever you want to look yourself.
+- Updating from 2.2 is the last time you'll need to download a release by hand.]]></description>
+            <enclosure url="https://github.com/nevyn/just-ten-breaths/releases/download/v2.3/just-ten-breaths_2.3.zip" length="1807347" type="application/octet-stream" sparkle:edSignature="nP71E0a+n4Xn0AXOtyXve6n9eLDPk7lwyTRjNSrgoANwToJOrvOG8B8wjAYk4Wk0YifkxCQrOO+vT1Oc3s5uCA=="/>
+        </item>
+    </channel>
+</rss>
